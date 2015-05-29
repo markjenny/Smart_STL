@@ -8,8 +8,8 @@ email£ºlijianlin1990@sina.com
 the cpp is the sub-allocation
 */
 /************************************************************************/
-#include "../smart_alloc.h"
-#include "../smart_allocator.h"
+#include "smart_alloc.h"
+#include "smart_allocator.h"
 
 namespace smart_stl
 {
