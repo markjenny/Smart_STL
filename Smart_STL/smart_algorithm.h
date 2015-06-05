@@ -254,7 +254,6 @@ namespace smart_stl
 		{
 			typedef typename _type_traits<T>::has_trivial_assignment_operator htao;
 			return _copy_htao_backward(first, last, result, htao());
-
 		}
 	};
 
@@ -337,6 +336,21 @@ namespace smart_stl
 	{
 		return _copy_d_backward(first, last, result, static_cast<ptrdiff_t*>0);
 	}
+
+	/*****
+	功能：交换两个元素
+	参数：参与交换的两个元素a，b
+	返回值：无
+	******/
+	template<class T>
+	inline void swap(T& a, T& b)
+	{
+		T temp = a;
+		a = b;
+		b = temp;
+	}
+
+
 
 }
 #endif _SMART_ALGORUTHM_H_
