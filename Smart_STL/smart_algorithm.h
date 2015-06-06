@@ -350,6 +350,18 @@ namespace smart_stl
 		b = temp;
 	}
 
+	/*****
+	功能：填充区间内的为val
+	参数：可写区间起始first，终止last，所要写的元素为val
+	返回值：无
+	******/
+	template<class InputIterator, class T>
+	inline fill(InputIterator first, InputIterator last, const T& val)
+	{
+		for (; first != last; first++)
+			*first = val;
+	}
+
 
 
 }
