@@ -155,6 +155,21 @@ namespace smart_stl
 		bool empty() const {return start_ == finish_;}
 		void resize(size_type new_size);
 		void resize(size_type new_size, const T& val);
+
+		/*****
+		功能：重新适配容量大小
+		参数：重新分配的容量n
+		返回值：无
+		******/
+		void reserve(size_type n);
+
+		/*****
+		功能：C++11新增加的功能：删除未使用的容量
+		参数：无
+		返回值：无
+		******/
+		void shrink_to_fit();
+
 		/***************************************************************************************************************************/
 
 		/************************************************************与访问元素有关************************************************/
@@ -164,12 +179,28 @@ namespace smart_stl
 		const_reference operator[](distance_type i) const {return *(cbegin() + i);}
 		reference front() {return (*begin());}
 		reference back() {return *(end() - 1);}
+
+		/*****
+		功能：C++11新增加的功能：返回容器指针
+		参数：无
+		返回值：pointer
+		******/
+		pointer data() {return start_;}
 		/***************************************************************************************************************************/
 
 		/**********************************************************与修改容器相关**************************************************/
-		//销毁容器中所有的对象，并使得容器的size为0，但是并不回收已有的空间
+		/*****
+		功能：clear函数，析构容器中的所有元素，但是不释放已分配的空间
+		参数：无
+		返回值：无
+		******/
 		void clear();
-		//交换两个容器，所以要将其中一个容器变量作为引用传入
+
+		/*****
+		功能：交换两个容器的内容
+		参数：无
+		返回值：无
+		******/
 		void swap(vector& v);
 		/*****
 		功能：push_back函数
@@ -177,11 +208,37 @@ namespace smart_stl
 		返回值：无
 		******/
 		void push_back(const value_type& val);
+
+		/*****
+		功能：弹出最后一个元素
+		参数：插入的元素val
+		返回值：无
+		******/
 		void pop_back();
+		/*****
+		功能：在特定position位置上加入val元素
+		参数：所要插入的位置position，插入的元素val
+		返回值：插入position位置元素对应的迭代器
+		******/
 		//插入迭代器，在position位置前进行插入，并返回该位置前迭代器
 		iterator insert(iterator positon, const value_type& val);
+
+		/*****
+		功能：在特定position位置上加入n个val元素
+		参数：所要插入的位置position，插入的元素val，所要插入的元素个数n
+		返回值：插入position位置元素对应的迭代器
+		******/
 		//第二种迭代器是将position位置前加入n个值为val的迭代器，加入n个迭代器，这个n更方便让我们理解这个n的物理含义
-		void insert(iterator positon, const size_type& n, const value_type& val);
+		void insert(iterator positon, size_type n, const value_type& val);
+
+		/*****
+		功能：在特定position位置上插入[first,last）上的元素
+		参数：所要插入的位置position，所要插入的范围
+		返回值：插入position位置元素对应的迭代器
+		******/
+		//第三种迭代器是将一个迭代器表示范围的元素插入到该迭代器中
+		template<class InputIterator>
+		void insert(iterator position, InputIterator first, InputIterator last);
 		//erase也是有两种函数，一种是只删除特定位置position上的迭代器，第二种是删除
 		//erase的时候返回的是position前一个位置的迭代器
 		iterator erase(iterator position);
@@ -193,10 +250,7 @@ namespace smart_stl
 		void fill_initialize(size_type n, const value_type& val);
 		//用于配置空间并将数据进行填充
 		iterator allocate_and_fill(size_type n, const value_type& val);
-		//后续要使用到构造和插入的辅助函数insert_aux,vector_aux
-		/*****************
-		此处待填写
-		******************/
+
 		//private类型的相关函数
 		void deallocate();
 
@@ -213,6 +267,12 @@ namespace smart_stl
 		//push_back调用insert_aux，sgi_stl中先判断是否有备用空间，然后insert_aux中又去判断是否有备用空间，觉得没有必要，直接让push_back
 		//去调用insert_aux
 		void insert_aux(iterator position, const T& val);
+		//insert_aux的另外两个重载函数，分别应用于insert(position,first,last)和insert(position, n, val)
+		template<class InputIterator>
+		void insert_aux(iterator position, InputIterator first, InputIterator last, _false_type);
+
+		template<class Integer>
+		void insert_aux(iterator position, Integer n, const value_type& val, _true_type);
 
 
 
@@ -223,33 +283,18 @@ namespace smart_stl
 	
 	
 	/**************************涉及到构造函数、复制构造函数、析构函数**********************************/
-	/*****
-	功能：vector构造函数
-	参数：无
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	vector<T, Alloc>::vector(const size_type n)
 	{
 		fill_initialize(n, T());
 	}
 
-	/*****
-	功能：vector构造函数
-	参数：需要构造的元素个数n，构造的元素值为val
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	vector<T, Alloc>::vector(size_type n, const value_type& val)
 	{
 		fill_initialize(n, val);
 	}
 
-	/*****
-	功能：vector构造函数
-	参数：被复制的vector的迭代器first和last
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	template<class InputIterator>
 	vector<T, Alloc>::vector(InputIterator first, InputIterator last)
@@ -258,22 +303,12 @@ namespace smart_stl
 		vector_aux(first, last, is_integer());
 	}
 
-	/*****
-	功能：vector复制构造函数
-	参数：被复制的vector对象v
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	vector<T, Alloc>::vector(const vector& v)
 	{
 		allocate_and_copy(v.start_, v.finish_);
 	}
 
-	/*****
-	功能：vector的assignment operator
-	参数：被进行赋值操作的vector对象
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	vector<T, Alloc>& vector<T, Alloc>::operator=(const vector& v)
 	{
@@ -284,11 +319,6 @@ namespace smart_stl
 	}
 
 
-	/*****
-	功能：vector析构函数
-	参数：无
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	vector<T,Alloc>::~vector()
 	{
@@ -304,11 +334,6 @@ namespace smart_stl
 
 
 	/****************************************************与比较相关*************************************************************/
-	/*****
-	功能：判断两个vector对象是否相同
-	参数：被用来比较的vector对象v
-	返回值：是否相同的bool型结果
-	******/
 	template<class T, class Alloc>
 	bool vector<T, Alloc>::operator==(const vector& v) const
 	{
@@ -327,63 +352,36 @@ namespace smart_stl
 		}
 	}
 
-	/*****
-	功能：判断两个vector对象是否不同
-	参数：被用来比较的vector对象v
-	返回值：是否不同的bool型结果
-	******/
 	template<class T, class Alloc>
 	bool vector<T, Alloc>::operator!=(const vector& v) const
 	{
 		return !(*this == v);
 	}
 
-		/*****
-		功能：判断两个vector对象是否相同的【友元函数】
-		参数：被用来比较的两个vector对象v1和v2
-		返回值：是否相同的bool型结果
-		******/
-		//friend是声明修饰符，所以在实现的时候就不必添加了
-		template<class T, class Alloc>
-		bool operator==(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2)
-		{
-			return v1.operator =(v2);
-		}
+	template<class T, class Alloc>
+	bool operator==(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2)
+	{
+		return v1.operator =(v2);
+	}
 
 
-		/*****
-		功能：判断两个vector对象是否不同的【友元函数】
-		参数：被用来比较的两个vector对象v1和v2
-		返回值：是否相同的bool型结果
-		******/
-		//friend是声明修饰符，所以在实现的时候就不必添加了
-		template<class T, class Alloc>
-		bool operator!=(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2)
-		{
-			return !(v1==v2);
-		}
+	template<class T, class Alloc>
+	bool operator!=(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2)
+	{
+		return !(v1==v2);
+	}
 	/********************************************************************************************************************************/
 
 
 
 
 	/***********************************************************与容量相关*****************************************************/
-	/*****
-	功能：resize函数，重新定义尺寸
-	参数：所要定义的新的size
-	返回值：无
-	******/
 	template<class T, class Alloc>
 	void vector<T, Alloc>::resize(size_type new_size)
 	{
 		resize(size_type, T());
 	}
 
-	/*****
-	功能：resize函数，重新定义尺寸
-	参数：所要定义的新的size，
-	返回值：无
-	******/
 	//resize的用法，当newsize比原来的size小的话，那么就只保留钱new_size个，如果，newsize比size大的话，
 	//就将newsize比size多的那些加在vector的尾部
 	template<class T, class Alloc>
@@ -394,6 +392,32 @@ namespace smart_stl
 		else
 			insert(end(), new_size - size(), val);
 	}
+
+	template<class T, class Alloc>
+	void vector<T, Alloc>::reserve(size_type n)
+	{
+		if( n <= capacity() )
+			return;
+
+		pointer new_start_ = data_allocator::allocate(n);
+		pointer new_finish_ = uninitialized_copy(start_, finish_, new_start_);
+
+		destroy(start_, , finish_);
+		deallocate();
+
+		start_ = new_start_;
+		finish_ = new_finish_;
+		end_of_storage_ = start_ + n;
+	}
+
+	template<class T, class Alloc>
+	void vector<T, Alloc>::shrink_to_fit()
+	{
+		//end_of_storage本来就应该指导容器外,对于二级适配器，end_of_storage-finish_如果小于128bytes那么也一定能放在规定的内存池中，
+		//因为各个链表都是8bytes的倍数，使得链表储存以8bytes为内存块显得更加有道理
+		data_allocator::deallocate(finish_, (end_of_storage_ - finish_));
+		end_of_storage_ = finish_;
+	}
 	/********************************************************************************************************************************/
 
 
@@ -402,14 +426,20 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void vector<T, Alloc>::clear()
 	{
-		//待整理。。。。
+		//需要注意的是，我们将容器内的元素进行clear之后，只是析构了，并没有释放
+		erase(start_, end());
 	}
 
 
 	template<class T, class Alloc>
 	void vector<T, Alloc>::swap(vector& v)
 	{
-		//待整理。。。。
+		if(*this != v)
+		{
+			swap(start_, v.start_);
+			swap(finish_, v.finish_);
+			swap(end_of_storage_, v.end_of_storage_);
+		}
 	}
 
 	template<class T, class Alloc>
@@ -421,55 +451,53 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void vector<T, Alloc>::pop_back()
 	{
-		//待整理。。。。
-
+		--finish_;
+		destroy(finish_);
 	}
 
 	template<class T, class Alloc>
-	typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator positon, const value_type& val)
+	typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator position, const value_type& val)
 	{
-		//待整理。。。。
-		return start_;
+		insert_aux(position, val);
+		return position;
 	}
 
 	template<class T, class Alloc>
-	void vector<T, Alloc>::insert(iterator positon, const size_type& n, const value_type& val)
+	template<class InputIterator>
+	void vector<T, Alloc>::insert(iterator position, InputIterator first, InputIterator last)
 	{
-		//待整理。。。。
-		return start_;
+		insert_aux(position, first, last, typename is_Integer<InputIterator>::class_type());
+	}
+
+	template<class T, class Alloc>
+	void vector<T, Alloc>::insert(iterator position, size_type n, const value_type& val)
+	{
+		insert_aux(position, n, val, typename is_Integer<size_type>::class_type());
 	}
 	
 
-	/*****
-	功能：删除容器内特定
-	参数：所要删除的位置position
-	返回值：下一个元素对应的迭代器
-	******/
 	template<class T, class Alloc>
 	typename vector<T, Alloc>::iterator vector<T, Alloc>::erase(iterator position)
 	{
 		return erase(position, position+1);
 	}
 
-	/*****
-	功能：删除容器内特定范围内的元素
-	参数：所要删除的范围起始first和终止last
-	返回值：last位置处的元素的迭代器
-	******/
 	//erase其实就是将没有被删除的向前移动
 	template<class T, class Alloc>
 	typename vector<T, Alloc>::iterator vector<T, Alloc>::erase(iterator first, iterator last)
 	{
 		//因为vector的iterator是原生指针，所以可以满足+=n和-=n的用法
 		//如果last与end()相同，说明要删除的都是”后半部分“，我们就不要再调用copy了，因为copy本来就含有模板，尽量减少编译后代码的膨胀性
-		if(last != end())
-			copy(last, finish_, first);
+		if(last != end())	
+			//copy(last, finish_, first);
+			uninitialized_copy(last, finish_, first);
 		//只进行析构对象，但是不释放空间
-		for(distance_type n = last - first; n > 0 ; n--)
-		{
-			--finish_;
-			destroy(finish_);
-		}
+// 		for(distance_type n = last - first; n > 0 ; n--)
+// 		{
+// 			--finish_;
+// 			destroy(finish_);
+// 		}
+		destroy(finish_ - (last - first), finish_)
 		return first;
 	}
 	/***************************************************************************************************************************/
@@ -559,7 +587,7 @@ namespace smart_stl
 			const size_type old_size = size();
 			//这个地方也改一下，STL源码剖析中说到当old_size为0的时候，将new_size设为1，但是这样使得
 			//当old_size小的非常泥泞，每次都要创建新空间，转移元素，释放久空间
-			const size_type new_size = old_size == 0 ? 1 : 2 * old_size;
+			const size_type new_size = old_size == 0 ? 8 : 2 * old_size;
 
 
 			iterator new_start_ = data_allocator::allocate(new_size);
@@ -582,6 +610,35 @@ namespace smart_stl
 			finish_ = new_finish_;
 			end_of_storage_ = start_ + new_size;
 		}
+	}
+
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	void vector<T, Alloc>::insert_aux(iterator position, InputIterator first, InputIterator last, _false_type)
+	{
+		size_type space_left = end_of_storage_ - finish_;
+		size_type space_need = last - first;
+
+		if (space_left >= space_need)
+		{
+			copy_backward(position, finish_, finish_ + space_need );
+
+			uninitialized_copy(first, last, position);
+
+			finish_+=(last - first);
+		}
+		else//备用空间不够
+		{
+
+		}
+	}
+
+	template<class T, class Alloc>
+	template<class Integer>
+	void vector<T, Alloc>::insert_aux(iterator position, Integer n, const value_type& val, _true_type)
+	{
+
 	}
 	/**************************************************************************************************************************/
 
