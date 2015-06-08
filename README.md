@@ -4,7 +4,7 @@
 a smart stl,no thread-safe
 
 
-Smart_STL目前进度（2015/6/8）
+#Smart_STL目前进度（2015/6/8）
 
 smart_stl组件进度：
 
@@ -26,7 +26,7 @@ smart_stl组件进度：
 
 
 
-smart_stl算法进度：
+#smart_stl算法进度：
 
 1.fill_n完成进度：100%；
 
@@ -40,4 +40,4 @@ smart_stl算法进度：
 
 
 
-smart_st测试环境为MicroSoft Visual Studio 2008 && Windows & && Debug模式
+#smart_st测试环境为MicroSoft Visual Studio 2008 && Windows & && Debug模式
