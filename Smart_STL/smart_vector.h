@@ -630,7 +630,22 @@ namespace smart_stl
 		}
 		else//备用空间不够
 		{
+			size_type old_size = size();
+			size_type new_size = ( 0 == size() ) ? 8 : 2 * old_size;
 
+			iterator new_start_ = data_allocator::allocate(new_size);
+			iterator new_finish_ = new_start_;
+
+			new_finish_ = uninitialized_copy(start_, position, new_start_);
+			new_finish_ = uninitialized_copy(first, last, new_finish_);
+			new_finish_ = uninitialized_copy(position, finish_, new_finish_);
+
+			destroy(start_, finish_);
+			deallocate();
+
+			start_ = new_start_;
+			finish_ = new_finish_;
+			end_of_storage_ = new_start_ + new_size;
 		}
 	}
 
@@ -638,7 +653,36 @@ namespace smart_stl
 	template<class Integer>
 	void vector<T, Alloc>::insert_aux(iterator position, Integer n, const value_type& val, _true_type)
 	{
+		//首先计算所剩容量是否可以放下所要insert的那些数据
+		size_type space_left = end_of_storage_ - finish_;
+		size_type space_need = n;
 
+		if (space_left >= space_need)
+		{
+			copy_backward(position, finish_, finish_ + space_need);
+			uninitialized_fill_n(position, n, val);
+
+			finish_ += space_need;
+		}
+		else
+		{
+			size_type old_size = size();
+			size_type new_size = ( 0 == old_size ) ? 8 : 2 * old_size;
+
+			iterator new_start_ = data_allocator::allocate(n);
+			iterator new_finish_ = new_start_;
+
+			new_finish_ = uninitialized_copy(start_, position, new_start_);
+			new_finish_ = uninitialized_fill_n(new_finish_, n, val);
+			new_finish_ = uninitialized_copy(position, finish_, new_finish_);
+
+			destroy(start_, finish_);
+			deallocate();
+
+			start_ = new_start_;
+			finish_ = new_finish_;
+			end_of_storage_ = new_start_ + new_size;
+		}
 	}
 	/**************************************************************************************************************************/
 
