@@ -2,6 +2,7 @@
 #define _SMART_LIST_H_
 #include "smart_iterator_base.h"
 #include "smart_alloc.h"
+#include "smart_type_traits.h"
 
 namespace smart_stl
 {
@@ -31,14 +32,14 @@ namespace smart_stl
 		typedef list_node<T>* list_nodePtr;
 
 	private:
-		list_nodePtr nodeP;
+		list_nodePtr nodePtr;
 
 		//关于迭代器所要满足的所有操作符
 	public:
-		bool operator != (const iterator& x) const {return nodeP != x.nodeP;}
-		bool operator == (const iterator& x) const {return nodeP == x.nodeP;}
+// 		bool operator != (const iterator& x) const {return nodeP != x.nodeP;}
+// 		bool operator == (const iterator& x) const {return nodeP == x.nodeP;}
 
-		iterator& operator ++ () {nodeP = (list_nodePtr)nodeP.next; return *this;}
+		iterator& operator ++ () {nodePtr = (list_nodePtr)nodePtr.next; return *this;}
 		iterator& operator ++ (int) 
 		{
 			//初始时候我写的代码是这样的，这是因为我没有搞懂迭代器和指针的区别----“迭代器不仅仅是指针！”
@@ -51,17 +52,17 @@ namespace smart_stl
 			return temp;
 		}
 
-		iterator& operator -- () {nodeP = (list_nodePtr)nodeP.prev; return *this;}
+		iterator& operator -- () {nodePtr = (list_nodePtr)nodePtr.prev; return *this;}
 		iterator& operator -- (int) {iterator temp = *this; --*this; return temp;}
 
-		reference operator * () {return (*nodeP).data;}
+		reference operator * () {return (*nodePtr).data;}
 		//以下是【成员存取运算子】的标准写法！！！
 		pointer operator -> () {return &(operator*());}
 
 		template<class T>
-		friend bool operator == (const list_iterator<T>& lhs, const list_iterator<T>& rhs) { return lhs.nodeP == rhs.nodeP;}
+		friend bool operator == (const list_iterator<T>& lhs, const list_iterator<T>& rhs) { return lhs.nodePtr == rhs.nodePtr;}
 		template<class T>
-		friend bool operator != (const list_iterator<T>& lhs, const list_iterator<T>& rhs) {return lhs.nodeP == rhs.nodeP;}
+		friend bool operator != (const list_iterator<T>& lhs, const list_iterator<T>& rhs) {return lhs.nodePtr == rhs.nodePtr;}
 	};
 
 
@@ -92,13 +93,15 @@ namespace smart_stl
 		//用于与双向链表产生联系的node，该节点即是end()处的节点，该节点的特点是，如果初始化一个空链表的话，那么一定会有一个节点，否则我们
 		//在后期加入节点的时候就无法操作，但是我们有要保证list看起来是空的，所以我们把这个节点设置为end的节点，一旦有节点加入，就将该节点指向
 		//链表的first
-		link_type node;
+		//link_type node;
+		//表示链表中的一个点应该是迭代器，而不应该是其中指向list_node的指针
+		iterator nodeIter;
 
 	public:
 		//public的相关函数
 		/*************************************与构造、析构、固执构造相关************************************************/
 		list();		//产生空链表
-		list(size_type n, const value_type& val = value_type());
+		explicit list(size_type n, const value_type& val = value_type());
 		<class InputIterator>
 		list(InputIterator first, InputIterator last);
 		//下面是复制构造函数、赋值操作符函数、析构函数
@@ -134,6 +137,8 @@ namespace smart_stl
 		reference front();
 		reference back();
 		/****************************************************************************************************************/
+
+
 		/******************************************与改变容器相关*******************************************************/
 		void push_back(const value_type& val);
 		void pop_back();
@@ -174,8 +179,98 @@ namespace smart_stl
 		void sort(Compare comp);
 
 		void reverse();
+		/****************************************************************************************************************/
 
+		/*********************************************private函数********************************************************/
+		private:
+			//首先是四个配置节点的函数：配置一个节点空间+释放一个节点空间+配置空间并构造节点+析构节点并释放空间
+		link_type get_node() {return node_allocator::allocate();}
+		void put_node(link_type p) {node_allocator::deallocate(p);}
+
+		link_type create_node(const value_type& val)
+		{
+			link_type temp = get_node();
+			construct(&temp->data, val);
+			return temp;
+		}
+
+		void destroy_node(link_type p)
+		{
+			destroy(p);
+			put_node(p);
+		}
+
+		//构建空链表
+		void empty_initialized();
+
+		//构造函数的辅助函数
+		template<class InputIterator>
+		void list_aux(InputIterator first, InputIterator last, _false_type);
+
+		template<class Integer>
+		void list_aux(Integer n, const value_type& val, _true_type);
 		/****************************************************************************************************************/
 	};
+	/************************************************【list的相关实现】***********************************************/
+	template<class T, class Alloc>
+	list<T>::list()
+	{
+		empty_initialized();
+	}
+
+	template<class T, class Alloc>
+	list<T, Alloc>::list(size_type n, const value_type& val = value_type())
+	{
+		typedef typename is_Integer<size_type>::class_type is_Int;
+		list_aux(n, val, is_Int());
+	}
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	list<T, Alloc>::list(InputIterator first, InputIterator last)
+	{
+		typedef typename is_Integer<InputIterator>::class_type is_Int;
+		list_aux(first, last, is_Int);
+	}
+
+	template<T, Alloc>
+	void list<T>::empty_initialized()
+	{
+		nodeIter.nodePtr = get_node();
+		//空链表的时候将next和prev都指向自己
+		nodeIter.nodePtr->next = node;
+		nodeIter.nodePtr->prev = node;
+	}
+
+	template<class T, class Alloc>
+	template<class Integer>
+	list<T, Alloc>::list(Integer n, const value_type& val, _true_type)
+	{
+		empty_initialized();
+		while(n--)
+			push_back(val);
+	}
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	list<T, Alloc>::list(InputIterator first, InputIterator last, _false_type)
+	{
+		empty_initialized();
+		while(; first != last; first++)
+			push_back(*first);
+	}
+
+	template<class T, class Alloc>
+	list<T, Alloc>::list(list& l)
+	{
+		empty_initialized();
+		iterator list_end = l.nodePtr;
+		iterator list_start = l.nodePtr;
+		list_start++;
+
+
+		for (; list_start != list_end; list_start++)
+			push_back(list_start.nodePtr->data);
+	}
 }
 #endif
