@@ -10,7 +10,7 @@ namespace smart_stl
 	template<class T>
 	struct list_node
 	{
-		typedef T data;
+		T data;
 		list_node<T>* prev;
 		list_node<T>* next;
 
@@ -31,16 +31,20 @@ namespace smart_stl
 
 		typedef list_node<T>* list_nodePtr;
 
-	private:
 		list_nodePtr nodePtr;
 
 		//关于迭代器所要满足的所有操作符
 	public:
+		//写出构造函数，便于同构nodePtr作为参数可以直接调用
+		list_iterator() {}
+		list_iterator(list_nodePtr x): nodePtr(x) {}
+		list_iterator(const iterator& x ):nodePtr(x.nodePtr) {}
 // 		bool operator != (const iterator& x) const {return nodeP != x.nodeP;}
 // 		bool operator == (const iterator& x) const {return nodeP == x.nodeP;}
 
-		iterator& operator ++ () {nodePtr = (list_nodePtr)nodePtr.next; return *this;}
-		iterator& operator ++ (int) 
+		iterator& operator ++ () {nodePtr = nodePtr->next; return *this;}
+		//后缀的++操作中不允许进行连续的++++，所以将返回值设置为const
+		const iterator operator ++ (int) 
 		{
 			//初始时候我写的代码是这样的，这是因为我没有搞懂迭代器和指针的区别----“迭代器不仅仅是指针！”
 			//list_nodePtr temp = nodeP;
@@ -49,24 +53,29 @@ namespace smart_stl
 			iterator temp = *this;
 			//直接利用上一个函数中已经实现的++操作符
 			++*this;
+			///////////////////////////////////////////////////////////////////////////////返回临时变量、、、、、、、、、、、、、
 			return temp;
 		}
 
-		iterator& operator -- () {nodePtr = (list_nodePtr)nodePtr.prev; return *this;}
-		iterator& operator -- (int) {iterator temp = *this; --*this; return temp;}
+		iterator& operator -- () {nodePtr = nodePtr->prev; return *this;}
+		const iterator operator -- (int) {iterator temp = *this; --*this; return temp;}
 
-		reference operator * () {return (*nodePtr).data;}
+		//有问题的operator*
+		reference operator * ()
+		{
+			return nodePtr->data;
+		}
 		//以下是【成员存取运算子】的标准写法！！！
 		pointer operator -> () {return &(operator*());}
 
 		template<class T>
 		friend bool operator == (const list_iterator<T>& lhs, const list_iterator<T>& rhs) { return lhs.nodePtr == rhs.nodePtr;}
 		template<class T>
-		friend bool operator != (const list_iterator<T>& lhs, const list_iterator<T>& rhs) {return lhs.nodePtr == rhs.nodePtr;}
+		friend bool operator != (const list_iterator<T>& lhs, const list_iterator<T>& rhs) {return lhs.nodePtr != rhs.nodePtr;}
 	};
 
 
-	template<class T, class Alloc = alloc>
+	template<class T, class Alloc = simple_alloc<list_node<T>>>
 	class list
 	{
 		//任何容器所需要的5个类型
@@ -88,7 +97,7 @@ namespace smart_stl
 		typedef const T& const_reference;
 
 	private:
-		typedef simple_alloc<node_type, Alloc> node_allocator;
+		typedef Alloc node_allocator;
 	private:
 		//用于与双向链表产生联系的node，该节点即是end()处的节点，该节点的特点是，如果初始化一个空链表的话，那么一定会有一个节点，否则我们
 		//在后期加入节点的时候就无法操作，但是我们有要保证list看起来是空的，所以我们把这个节点设置为end的节点，一旦有节点加入，就将该节点指向
@@ -102,7 +111,7 @@ namespace smart_stl
 		/*************************************与构造、析构、固执构造相关************************************************/
 		list();		//产生空链表
 		explicit list(size_type n, const value_type& val = value_type());
-		<class InputIterator>
+		template<class InputIterator>
 		list(InputIterator first, InputIterator last);
 		//下面是复制构造函数、赋值操作符函数、析构函数
 		list(const list& l);
@@ -124,13 +133,13 @@ namespace smart_stl
 
 		/***************************************与容量相关**************************************************************/
 		size_type size() const;
-		bool empty() const {return node->next == node;}
+		bool empty() const {return nodeIter.nodePtr->next == nodeIter.nodePtr;}
 
 		/****************************************************************************************************************/
 
 		/****************************************与迭代器相关*********************************************************/
-		iterator begin();
-		iterator end();
+		iterator begin() {return iterator(nodeIter.nodePtr->next);}
+		iterator end() {return nodeIter;}
 		/****************************************************************************************************************/
 
 		/****************************************与访问元素相关*********************************************************/
@@ -143,11 +152,11 @@ namespace smart_stl
 		void push_back(const value_type& val);
 		void pop_back();
 		void push_front(const value_type& val);
-		void pop_back();
+		void pop_front();
 
 		iterator insert(iterator position, const value_type& val);
 		void insert(iterator position, size_type n, const value_type& val);
-		<class InputIterator>
+		template<class InputIterator>
 		void insert(iterator positon, InputIterator first, InputIterator last);
 
 		void clear();
@@ -159,7 +168,7 @@ namespace smart_stl
 		//以下是list特有的函数
 		void splice(iterator positon, list& l);
 		void splice(iterator position, list& l, iterator i);
-		void splice(iterator positon, list& l, iterator first);
+		void splice(iterator positon, list& l, iterator first, iterator last);
 
 		void remove(const value_type& val);
 		template<class Predicate>
@@ -190,7 +199,7 @@ namespace smart_stl
 		link_type create_node(const value_type& val)
 		{
 			link_type temp = get_node();
-			construct(&temp->data, val);
+			smart_stl::construct(&(temp->data), val);
 			return temp;
 		}
 
@@ -212,8 +221,9 @@ namespace smart_stl
 		/****************************************************************************************************************/
 	};
 	/************************************************【list的相关实现】***********************************************/
+	/*************************************与构造、析构、固执构造相关************************************************/
 	template<class T, class Alloc>
-	list<T>::list()
+	list<T, Alloc>::list()
 	{
 		empty_initialized();
 	}
@@ -233,18 +243,18 @@ namespace smart_stl
 		list_aux(first, last, is_Int);
 	}
 
-	template<T, Alloc>
-	void list<T>::empty_initialized()
+	template<class T, class Alloc>
+	void list<T, Alloc>::empty_initialized()
 	{
 		nodeIter.nodePtr = get_node();
 		//空链表的时候将next和prev都指向自己
-		nodeIter.nodePtr->next = node;
-		nodeIter.nodePtr->prev = node;
+		nodeIter.nodePtr->next = nodeIter.nodePtr;
+		nodeIter.nodePtr->prev = nodeIter.nodePtr;
 	}
 
 	template<class T, class Alloc>
 	template<class Integer>
-	list<T, Alloc>::list(Integer n, const value_type& val, _true_type)
+	void list<T, Alloc>::list_aux(Integer n, const value_type& val, _true_type)
 	{
 		empty_initialized();
 		while(n--)
@@ -253,24 +263,88 @@ namespace smart_stl
 
 	template<class T, class Alloc>
 	template<class InputIterator>
-	list<T, Alloc>::list(InputIterator first, InputIterator last, _false_type)
+	void list<T, Alloc>::list_aux(InputIterator first, InputIterator last, _false_type)
 	{
 		empty_initialized();
-		while(; first != last; first++)
+		for(; first != last; first++)
 			push_back(*first);
 	}
 
 	template<class T, class Alloc>
-	list<T, Alloc>::list(list& l)
+	list<T, Alloc>::list(const list& l)
 	{
 		empty_initialized();
 		iterator list_end = l.nodePtr;
-		iterator list_start = l.nodePtr;
-		list_start++;
+		iterator list_start = iterator(l.nodePtr->next);
 
 
 		for (; list_start != list_end; list_start++)
-			push_back(list_start.nodePtr->data);
+			push_back(*list_start);
+	}
+
+	template<class T, class Alloc>
+	list<T, Alloc>& list<T, Alloc>::operator =(const list& l)
+	{
+		empty_initialized();
+		iterator list_end = l.nodePtr;
+		iterator list_start = iterator(l.nodePtr);
+
+		for (; list_start != list_end; list_start++)
+			push_back(*list_start);
+
+		return *this;
+	}
+
+	template<class T, class Alloc>
+	list<T, Alloc>::~list()
+	{
+		iterator list_start = iterator(nodeIter.nodePtr->next);
+		for (; list_start != nodeIter; )
+		{
+			iterator list_temp = iterator(list_start++);
+			destroy_node(list_temp.nodePtr);
+			//list_start++;
+		}
+		destroy_node(nodeIter.nodePtr);
+	}
+
+	/****************************************************************************************************************/
+
+	/**************************************与逻辑比较相关***********************************************************/
+// 	template<class T>
+// 	friend bool operator == (const list<T>& lhs, const list<T>& rhs);
+// 	template<class T>
+// 	friend bool operator != (const list<T>& lhs, const list<T>& rhs);
+	/****************************************************************************************************************/
+
+	/***************************************与容量相关**************************************************************/
+	template<class T, class Alloc>
+	typename list<T, Alloc>::size_type list<T, Alloc>::size() const 
+	{
+		distance_type n = distance(begin(), end());
+		return (size_type)n;
+	}
+
+	/****************************************************************************************************************/
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::push_back(const value_type& val)
+	{
+		insert(end(), val);
+	}
+
+	template<class T, class Alloc>
+	typename list<T, Alloc>::iterator list<T, Alloc>::insert(iterator position, const value_type& val)
+	{
+		link_type temp = create_node(val);
+
+		temp->next = position.nodePtr;
+		temp->prev = (position.nodePtr)->prev;
+
+		((position.nodePtr)->prev)->next = temp;
+		position.nodePtr->prev = temp;
+
+		return iterator(temp);
 	}
 }
 #endif
