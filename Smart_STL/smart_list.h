@@ -124,10 +124,10 @@ namespace smart_stl
 
 
 		/**************************************与逻辑比较相关***********************************************************/
-		template<class T>
-		friend bool operator == (const list<T>& lhs, const list<T>& rhs);
-		template<class T>
-		friend bool operator != (const list<T>& lhs, const list<T>& rhs);
+		template<class T,class Alloc>
+		friend bool operator == (const list<T, Alloc>& lhs, const list<T, Alloc>& rhs);
+		template<class T, class Alloc>
+		friend bool operator != (const list<T, Alloc>& lhs, const list<T, Alloc>& rhs);
 		/****************************************************************************************************************/
 
 
@@ -274,8 +274,8 @@ namespace smart_stl
 	list<T, Alloc>::list(const list& l)
 	{
 		empty_initialized();
-		iterator list_end = l.nodePtr;
-		iterator list_start = iterator(l.nodePtr->next);
+		iterator list_end = iterator(l.nodeIter);
+		iterator list_start = iterator(l.nodeIter.nodePtr->next);
 
 
 		for (; list_start != list_end; list_start++)
@@ -311,10 +311,27 @@ namespace smart_stl
 	/****************************************************************************************************************/
 
 	/**************************************与逻辑比较相关***********************************************************/
-// 	template<class T>
-// 	friend bool operator == (const list<T>& lhs, const list<T>& rhs);
-// 	template<class T>
-// 	friend bool operator != (const list<T>& lhs, const list<T>& rhs);
+	//注意：比较两个链表是否相等的时候并不是要比较两个链表的迭代器都是相等的，而是链表中元素相同，“链表”展示给用户
+	//使用的时候是一个非环装的链表！
+	template<class T, class Alloc>
+	bool operator == (const list<T, Alloc>& lhs, const list<T, Alloc>& rhs)
+	{
+		typename list<T, Alloc>::iterator lhs_startIter = typename list<T, Alloc>::iterator(lhs.nodeIter);
+		typename list<T, Alloc>::iterator rhs_startIter = typename list<T, Alloc>::iterator(rhs.nodeIter);
+		for (; lhs_startIter != lhs.nodeIter && rhs_startIter != rhs.nodeIter; lhs_startIter++, rhs_startIter++)
+		{
+			if (*lhs_startIter != *rhs_startIter)
+				return false;
+		}
+		if(lhs_startIter != lhs.nodeIter && rhs_startIter != rhs.nodeIter)
+			return false;
+		return true;
+	}
+	template<class T, class Alloc>
+	bool operator != (const list<T, Alloc>& lhs, const list<T, Alloc>& rhs)
+	{
+		return !(lhs == rhs);
+	}
 	/****************************************************************************************************************/
 
 	/***************************************与容量相关**************************************************************/
