@@ -344,6 +344,21 @@ namespace smart_stl
 
 	/****************************************************************************************************************/
 
+
+	/****************************************与访问元素相关*********************************************************/
+	template<class T, class Alloc>
+	typename list<T, Alloc>::reference list<T, Alloc>::front()
+	{
+		return nodeIter.nodePtr->next->data;
+	}
+
+	template<class T, class Alloc>
+	typename list<T, Alloc>::reference list<T, Alloc>::back()
+	{
+		return nodeIter.nodePtr->data;
+	}
+	/****************************************************************************************************************/
+
 	template<class T, class Alloc>
 	void list<T, Alloc>::push_back(const value_type& val)
 	{
