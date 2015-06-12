@@ -40,7 +40,7 @@ namespace smart_stl
 	{
 		typedef input_iterator_tag iterator_category;
 		typedef _Tp value_type;
-		typedef _Distance difference_type;
+		typedef _Distance distance_type;
 		typedef _Tp* pointer;
 		typedef _Tp& reference;
 	};
@@ -53,7 +53,7 @@ namespace smart_stl
 	{
 		typedef output_iterator_tag iterator_category;
 		typedef _Tp value_type;
-		typedef _Distance difference_type;
+		typedef _Distance distance_type;
 		typedef _Tp* pointer;
 		typedef _Tp& reference;
 	};
@@ -63,7 +63,7 @@ namespace smart_stl
 	{
 		typedef forward_iterator_tag iterator_category;
 		typedef _Tp value_type;
-		typedef _Distance difference_type;
+		typedef _Distance distance_type;
 		typedef _Tp* pointer;
 		typedef _Tp& reference;
 	};
@@ -73,7 +73,7 @@ namespace smart_stl
 	{
 		typedef bidirectional_iterator_tag iterator_category;
 		typedef _Tp value_type;
-		typedef _Distance difference_type;
+		typedef _Distance distance_type;
 		typedef _Tp* pointer;
 		typedef _Tp& reference;
 	};
@@ -83,7 +83,7 @@ namespace smart_stl
 	{
 		typedef random_access_iterator_tag iterator_category;
 		typedef _Tp value_type;
-		typedef _Distance difference_type;
+		typedef _Distance distance_type;
 		typedef _Tp* pointer;
 		typedef _Tp& reference;
 	};
@@ -100,7 +100,7 @@ namespace smart_stl
 	 {
 		 typedef _Category iterator_category;
 		 typedef _Tp value_type;
-		 typedef ptrdiff_t difference_type;
+		 typedef ptrdiff_t distance_type;
 		 typedef _Pointer pointer;
 		 typedef _Reference reference;
 	 };
@@ -112,7 +112,7 @@ namespace smart_stl
 		 //因为编译器不知道_Iterator中的iterator_category是类型还是成员，所以通过typename来告知编译器
 		 typedef typename _Iterator::iterator_category iterator_category;
 		 typedef typename _Iterator::value_type value_type;
-		 typedef typename _Iterator::difference_type difference_type;
+		 typedef typename _Iterator::difference_type distance_type;
 		 typedef typename _Iterator::pointer pointer;
 		 typedef typename _Iterator::reference reference;
 	 };
@@ -122,7 +122,7 @@ namespace smart_stl
 	 {
 		 typedef random_access_iterator_tag iterator_category;
 		 typedef _Tp value_type;
-		 typedef ptrdiff_t difference_type;
+		 typedef ptrdiff_t distance_type;
 		 typedef _Tp* pointer;
 		 typedef _Tp& reference;
 	 };
@@ -133,7 +133,7 @@ namespace smart_stl
 	 {
 		 typedef random_access_iterator_tag iterator_category;
 		 typedef _Tp value_type;
-		 typedef ptrdiff_t difference_type;
+		 typedef ptrdiff_t distance_type;
 		 typedef _Tp* pointer;
 		 typedef _Tp& reference;
 	 };
@@ -160,11 +160,39 @@ namespace smart_stl
 		 return catogory();
 	 }
 
+	 //之所以可以用0是因为C++标准中，任何类型都有0值
 	 template<class Iterator>
-	 inline typename iterator_traits<Iterator>::difference_type*
-		 difference_type(const Iterator&)
+	 inline typename iterator_traits<Iterator>::distance_type*
+		 distance_type(const Iterator&)
 	 {
-		 return static_cast<typename iterator_traits<Iterator>::difference_type*>(0)
+		 return static_cast<typename iterator_traits<Iterator>::distance_type*>(0)
+	 }
+
+
+	 template<class InputIterator>
+	 inline typename iterator_traits<InputIterator>::distance_type
+		 _distance(InputIterator first, InputIterator last, input_iterator_tag)
+	 {
+		 typename iterator_traits<InputIterator>::distance_type n = 0;
+		 for (; first != last; first++)
+			 n++;
+
+		 return n;
+	 }
+
+	 template<class RandomAccessIterator>
+	 inline typename iterator_traits<RandomAccessIterator>::distance_type
+		 _distance(RandomAccessIterator first, RandomAccessIterator last, random_access_iterator_tag)
+	 {
+		 return last - first;
+	 }
+
+	 template<class InputIterator>
+	 inline typename iterator_traits<InputIterator>::distance_type
+		 distance(InputIterator first, InputIterator last)
+	 {
+		 typedef typename iterator_traits<InputIterator>::iterator_category category;
+		 _distance(first, last, category());
 	 }
 
 }
