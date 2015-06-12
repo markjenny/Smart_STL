@@ -39,8 +39,8 @@ namespace smart_stl
 		list_iterator() {}
 		list_iterator(list_nodePtr x): nodePtr(x) {}
 		list_iterator(const iterator& x ):nodePtr(x.nodePtr) {}
-// 		bool operator != (const iterator& x) const {return nodeP != x.nodeP;}
-// 		bool operator == (const iterator& x) const {return nodeP == x.nodeP;}
+		// 		bool operator != (const iterator& x) const {return nodeP != x.nodeP;}
+		// 		bool operator == (const iterator& x) const {return nodeP == x.nodeP;}
 
 		iterator& operator ++ () {nodePtr = nodePtr->next; return *this;}
 		//后缀的++操作中不允许进行连续的++++，所以将返回值设置为const
@@ -78,6 +78,7 @@ namespace smart_stl
 	template<class T, class Alloc = simple_alloc<list_node<T>>>
 	class list
 	{
+		//list最重要的三个函数insert和erase和transfer，其他的函数主要都是依据这三个
 		//任何容器所需要的5个类型
 	public:
 		typedef T value_type;
@@ -191,8 +192,8 @@ namespace smart_stl
 		/****************************************************************************************************************/
 
 		/*********************************************private函数********************************************************/
-		private:
-			//首先是四个配置节点的函数：配置一个节点空间+释放一个节点空间+配置空间并构造节点+析构节点并释放空间
+	private:
+		//首先是四个配置节点的函数：配置一个节点空间+释放一个节点空间+配置空间并构造节点+析构节点并释放空间
 		link_type get_node() {return node_allocator::allocate();}
 		void put_node(link_type p) {node_allocator::deallocate(p);}
 
@@ -218,6 +219,10 @@ namespace smart_stl
 
 		template<class Integer>
 		void list_aux(Integer n, const value_type& val, _true_type);
+
+		//list中最重要的一个私有函数transfer，因为这个函数十分容易用错，所以写成私有，而且把它写成共有需要
+		//用很多的安全检查，而且没有必要
+		void transfer(iterator position, iterator first, iterator last);
 		/****************************************************************************************************************/
 	};
 	/************************************************【list的相关实现】***********************************************/
@@ -243,32 +248,6 @@ namespace smart_stl
 		list_aux(first, last, is_Int);
 	}
 
-	template<class T, class Alloc>
-	void list<T, Alloc>::empty_initialized()
-	{
-		nodeIter.nodePtr = get_node();
-		//空链表的时候将next和prev都指向自己
-		nodeIter.nodePtr->next = nodeIter.nodePtr;
-		nodeIter.nodePtr->prev = nodeIter.nodePtr;
-	}
-
-	template<class T, class Alloc>
-	template<class Integer>
-	void list<T, Alloc>::list_aux(Integer n, const value_type& val, _true_type)
-	{
-		empty_initialized();
-		while(n--)
-			push_back(val);
-	}
-
-	template<class T, class Alloc>
-	template<class InputIterator>
-	void list<T, Alloc>::list_aux(InputIterator first, InputIterator last, _false_type)
-	{
-		empty_initialized();
-		for(; first != last; first++)
-			push_back(*first);
-	}
 
 	template<class T, class Alloc>
 	list<T, Alloc>::list(const list& l)
@@ -359,10 +338,32 @@ namespace smart_stl
 	}
 	/****************************************************************************************************************/
 
+
+	/******************************************与改变容器相关*******************************************************/
 	template<class T, class Alloc>
 	void list<T, Alloc>::push_back(const value_type& val)
 	{
 		insert(end(), val);
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::pop_back()
+	{
+		iterator temp = end();
+		temp--;
+		erase(temp);
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::push_front(const value_type& val)
+	{
+		insert(begin(), val);
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::pop_front()
+	{
+		erase(begin());
 	}
 
 	template<class T, class Alloc>
@@ -378,5 +379,274 @@ namespace smart_stl
 
 		return iterator(temp);
 	}
+
+	//链表的插入操作的好处就是，他的复杂度为O(1)，所以我们在插入n个的时候可以考虑采用循环插入的方式，这点和vector有着很大的不同
+	//故我采用循环的方式
+	template<class T, class Alloc>
+	void list<T, Alloc>::insert(iterator position, size_type n, const value_type& val)
+	{
+		while (n--)
+		{
+			insert(position, val);
+		}
+	}
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	void list<T, Alloc>::insert(iterator positon, InputIterator first, InputIterator last)
+	{
+		//因为是inputIterator所以我们没有办法计算他们两个之间的距离
+		// 		for(; first != last; first++)
+		// 		{
+		// 			insert(positon, *first);
+		// 		}
+		//上面一段代码有错误，这是将first~last之间的元素进行了倒插！！
+		last--;
+		for(; last != first; last--)
+			insert(positon, *last);
+		insert(positon, *last);
+	}
+	//
+	//需要注意的一点是，clear时是空链表，要保持有空链表的end
+	template<class T, class Alloc>
+	void list<T, Alloc>::clear()
+	{
+		link_type cur = nodeIter.nodePtr;
+
+		while (cur != nodeIter.nodePtr)
+		{
+			link_type temp = cur;
+			cur = cur->next;
+
+			destroy_node(temp);
+		}
+		//此时只剩一个节点了，但是该节点的next和prev不知道指向哪里，所以空指针还要指向自己
+		nodeIter.nodePtr->next = nodeIter.nodePtr;
+		nodeIter.nodePtr->prev = nodeIter.nodePtr;
+	}
+
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::swap(list& l)
+	{
+		swap(nodeIter, l.nodeIter);
+	}
+
+	template<class T, class Alloc>
+	typename list<T, Alloc>::iterator list<T, Alloc>::erase(iterator position)
+	{
+		//在与list相关的操作中，我们先定义出该点的前一个节点和后一个节点往往使得编写代码的时候逻辑更容易保持清晰，并且也容易让他人读懂，对于单链表
+		//对于单链表我们可以定义前一个指针和该指针
+		link_type next_node = position.nodePtr->next;
+		link_type prev_node = position.nodePtr->prev;
+
+		prev_node->next = next_node;
+		next_node->prev = prev_node;
+
+		destroy_node(position.nodePtr);
+		return iterator(next_node);
+	}
+
+	template<class T, class Alloc>
+	typename list<T, Alloc>::iterator list<T, Alloc>::erase(iterator first, iterator last)
+	{
+		for (; first != last; )
+		{
+			first = erase(first);
+		}
+		return first;
+	}
+
+	//以下是list特有的函数
+	//总的来说，splice这个函数不是那么友好。。。。。
+	template<class T, class Alloc>
+	void list<T, Alloc>::splice(iterator positon, list& l)
+	{
+		if (0 != l.size())
+			transfer(positon, l.begin(), l.end());
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::splice(iterator position, list& l, iterator i)
+	{
+		//存在l和*this是同一个链表
+		iterator j = i;
+		j++;
+
+		if (i == position || j == position)
+			return;
+
+		transfer(position, i, j);
+	}
+	template<class T, class Alloc>
+	void list<T, Alloc>::splice(iterator positon, list& l, iterator first, iterator last)
+	{
+		if(first == last)
+			return;
+		transfer(positon, first, last);
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::remove(const value_type& val)
+	{
+		iterator temp = begin();
+		for (; temp != nodeIter; )
+		{
+			if (*temp == val)
+				temp = erase(temp);
+			else
+				temp++;
+		}
+	}
+
+	template<class T, class Alloc>
+	template<class Predicate>
+	void list<T, Alloc>::remove_if(Predicate pred)
+	{
+		iterator temp = begin();
+		for (; temp != nodeIter;)
+		{
+			if (pred(*temp))
+				temp = erase(temp);
+			else
+				temp++;
+		}
+	}
+
+	//只有相同且连续的元素才会被删除剩一个
+	template<class T, class Alloc>
+	void list<T, Alloc>::unique()
+	{
+		iterator first = begin();
+		iterator last = end();
+
+		if (nodeIter.nodePtr->next == nodeIter.nodePtr || nodeIter.nodePtr->next->next == nodeIter.nodePtr)
+			return;
+
+		iterator next = first;
+		while(++next != last)
+		{
+			if (*first == *next)
+			{
+				erase(first);
+			}
+			first = next;
+		}
+	}
+
+
+	template<class T, class Alloc>
+	template<class BinaryPredicate>
+	void list<T, Alloc>::unique(BinaryPredicate binary_pred)
+	{
+		iterator first = begin();
+		iterator last = end();
+
+		if (nodeIter.nodePtr->next = nodeIter.nodePtr || nodeIter.nodePtr->next->next = nodeIter.nodePtr)
+			return;
+
+		iterator next = first;
+		while(++next != last)
+		{
+			if (binary_pred(*first, *next))
+			{
+				erase(first);
+			}
+			first = next;
+		}
+	}
+
+	void merge(list& l);
+
+	template<class T, class Alloc>
+	template<class Compare>
+	void list<T, Alloc>::merge(list& l, Compare comp)
+	{
+		iterator first1 = begin();
+		iterator last1 = end();
+
+		iterator first2 = begin();
+		iterator last2 = end();
+
+		while(first1 != last1 && first2 != last2)
+		{
+			if (comp(*first1, *first2))
+			{
+				first1++;
+			}
+			else
+			{
+				iterator temp = first2;
+				temp++;
+				transfer(first1, first2, temp);
+				first2 = temp;
+			}
+		}
+		if (first2 != last2)
+			transfer(last1, first2, last2);
+	}
+	// 
+	// 	void sort();
+	// 	//哲理的Compare就可以试仿函数，注重算法的思想而不是输入
+	// 	template<class Compare>
+	// 	void sort(Compare comp);
+	// 
+	// 	void reverse();
+	/****************************************************************************************************************/
+
+
+	/*********************************************private函数********************************************************/
+	template<class T, class Alloc>
+	void list<T, Alloc>::empty_initialized()
+	{
+		nodeIter.nodePtr = get_node();
+		//空链表的时候将next和prev都指向自己
+		nodeIter.nodePtr->next = nodeIter.nodePtr;
+		nodeIter.nodePtr->prev = nodeIter.nodePtr;
+	}
+
+	template<class T, class Alloc>
+	template<class Integer>
+	void list<T, Alloc>::list_aux(Integer n, const value_type& val, _true_type)
+	{
+		empty_initialized();
+		while(n--)
+			push_back(val);
+	}
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	void list<T, Alloc>::list_aux(InputIterator first, InputIterator last, _false_type)
+	{
+		empty_initialized();
+		for(; first != last; first++)
+			push_back(*first);
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::transfer(iterator position, iterator first, iterator last)
+	{
+		//该函数的作用是将[first，last)之间的元素插入到position的位置，所以当position是last的时候，没有必要这么做
+		//了，而且需要说的是，这个position和[first,last)可以是不用的链表
+		if (position != last)
+		{
+			//首先确定position前的位置，因为我们插入一个区间
+			link_type temp = position.nodePtr.prev;
+			link_type first_prev = first.nodePtr->prev;
+			link_type last_prev = last.nodePtr->prev;
+
+			//将[first, last)的区域从原来的列表中区分
+			first_prev->next = last.nodePtr;
+			last.nodePtr->prev = first_prev;
+
+			//将提取出来的区域[first, last)组装到position的前面
+			temp->next = first.nodePtr;
+			first.nodePtr->prev = temp;
+
+			last_prev->next = position.nodePtr;
+			position.nodePtr->prev = last_prev;
+		}
+	}
+	/****************************************************************************************************************/
 }
 #endif
