@@ -10,7 +10,7 @@ namespace smart_stl
 	/*****
 	功能：fill_n算法
 	参数：所要fill的起始地址first，所要fill的个数n，fill的元素值val
-	返回值：无
+	返回值：被填充的最后一个元素的下一个位置
 	******/
 	template<class OutputIterator, class Size, class T>
 	OutputIterator fill_n(OutputIterator first, Size n, const T& val)
@@ -356,7 +356,7 @@ namespace smart_stl
 	返回值：无
 	******/
 	template<class InputIterator, class T>
-	inline fill(InputIterator first, InputIterator last, const T& val)
+	inline void fill(InputIterator first, InputIterator last, const T& val)
 	{
 		for (; first != last; first++)
 			*first = val;
