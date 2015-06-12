@@ -161,11 +161,27 @@ namespace smart_stl
 				typedef _false_type class_type;
 			};
 
+			//该形式的使用是“显示具体化”
 		_SMART_STL_TEMPLAT_NULL
 			struct is_Integer<int>
 			{
 				typedef _true_type class_type;
 			};
+
+			//该形式的使用是“显示具体化”
+			_SMART_STL_TEMPLAT_NULL
+			struct is_Integer<unsigned int>
+			{
+				typedef _true_type class_type;
+			};
+
+			//该形式的使用是“显示具体化”
+			_SMART_STL_TEMPLAT_NULL
+			struct is_Integer<long unsigned int>
+			{
+				typedef _true_type class_type;
+			};
+
 
 
 }
