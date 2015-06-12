@@ -128,7 +128,8 @@ namespace smart_stl
 		参数：被用来比较的两个vector对象v1和v2
 		返回值：是否相同的bool型结果
 		******/
-		friend bool operator==(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2);
+		template<class T, class Alloc>
+		friend bool operator == (const vector<T, Alloc>& v1, const vector<T, Alloc>& v2);
 
 
 		/*****
@@ -136,7 +137,8 @@ namespace smart_stl
 		参数：被用来比较的两个vector对象v1和v2
 		返回值：是否相同的bool型结果
 		******/
-		friend bool operator!=(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2);
+ 		template<class T, class Alloc>
+ 		friend bool operator != (const vector<T, Alloc>& v1, const vector<T, Alloc>& v2);
 		/**************************************************************************************************************************/
 
 		/*****************************************************与迭代器相关********************************************************/
@@ -375,11 +377,11 @@ namespace smart_stl
 
 
 
-	/***********************************************************与容量相关*****************************************************/
+	/***********************************************************与容量相关**********************************************************/
 	template<class T, class Alloc>
 	void vector<T, Alloc>::resize(size_type new_size)
 	{
-		resize(size_type, T());
+		resize(new_size, T());
 	}
 
 	//resize的用法，当newsize比原来的size小的话，那么就只保留钱new_size个，如果，newsize比size大的话，
@@ -387,7 +389,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void vector<T, Alloc>::resize(size_type new_size, const T& val)
 	{
-		if (new_size < size())
+		if (new_size < (size_type)size())
 			erase(begin() + new_size, end());
 		else
 			insert(end(), new_size - size(), val);
@@ -396,13 +398,13 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void vector<T, Alloc>::reserve(size_type n)
 	{
-		if( n <= capacity() )
+		if( n <= (size_type)capacity() )
 			return;
 
 		pointer new_start_ = data_allocator::allocate(n);
 		pointer new_finish_ = uninitialized_copy(start_, finish_, new_start_);
 
-		destroy(start_, , finish_);
+		destroy(start_ , finish_);
 		deallocate();
 
 		start_ = new_start_;
@@ -436,9 +438,9 @@ namespace smart_stl
 	{
 		if(*this != v)
 		{
-			swap(start_, v.start_);
-			swap(finish_, v.finish_);
-			swap(end_of_storage_, v.end_of_storage_);
+			smart_stl::swap(start_, v.start_);
+			smart_stl::swap(finish_, v.finish_);
+			smart_stl::swap(end_of_storage_, v.end_of_storage_);
 		}
 	}
 
@@ -497,7 +499,8 @@ namespace smart_stl
 // 			--finish_;
 // 			destroy(finish_);
 // 		}
-		destroy(finish_ - (last - first), finish_)
+		destroy(finish_ - (last - first), finish_);
+		finish_ -= (last - first);
 		return first;
 	}
 	/***************************************************************************************************************************/
@@ -594,6 +597,8 @@ namespace smart_stl
 			iterator new_finish_ = new_start_;
 
 			new_finish_ = uninitialized_copy(start_, position, new_start_);
+			//使用下边的语句来替换上面的可以节省时间，但是我没找到不用uninitialized的好的理由
+			//new_finish_ = copy(start_, position, new_start_);
 
 			//在position的位置上添加新元素（因为要在position的位置上插入，所以原position位置上的元素向后移一位）;
 			construct(new_finish_, val);
@@ -601,6 +606,8 @@ namespace smart_stl
 			new_finish_++;
 
 			new_finish_ = uninitialized_copy(position, finish_, new_finish_);
+			//使用下边的语句来替换上面的可以节省时间，但是我没找到不用uninitialized的好的理由
+			//new_finish_ = copy(position, finish_, new_finish_);
 
 			//析构原区间上的元素，并释放空间
 			destroy(start_, finish_);
@@ -625,6 +632,8 @@ namespace smart_stl
 			copy_backward(position, finish_, finish_ + space_need );
 
 			uninitialized_copy(first, last, position);
+			//使用下边的语句来替换上面的可以节省时间，但是我没找到不用uninitialized的好的理由
+			//copy(first, last, position);
 
 			finish_+=(last - first);
 		}
@@ -639,6 +648,10 @@ namespace smart_stl
 			new_finish_ = uninitialized_copy(start_, position, new_start_);
 			new_finish_ = uninitialized_copy(first, last, new_finish_);
 			new_finish_ = uninitialized_copy(position, finish_, new_finish_);
+			//使用下边的语句来替换上面的可以节省时间，但是我没找到不用uninitialized的好的理由
+// 			new_finish_ = copy(start_, position, new_start_);
+// 			new_finish_ = copy(first, last, new_finish_);
+// 			new_finish_ = copy(position, finish_, new_finish_);
 
 			destroy(start_, finish_);
 			deallocate();
@@ -661,6 +674,8 @@ namespace smart_stl
 		{
 			copy_backward(position, finish_, finish_ + space_need);
 			uninitialized_fill_n(position, n, val);
+			//使用下边的语句来替换上面的可以节省时间，但是我没找到不用uninitialized的好的理由
+			//fill_n(position, n, val);
 
 			finish_ += space_need;
 		}
@@ -675,6 +690,11 @@ namespace smart_stl
 			new_finish_ = uninitialized_copy(start_, position, new_start_);
 			new_finish_ = uninitialized_fill_n(new_finish_, n, val);
 			new_finish_ = uninitialized_copy(position, finish_, new_finish_);
+			//使用下边的语句来替换上面的可以节省时间，但是我没找到不用uninitialized的好的理由
+// 			new_finish_ = copy(start_, position, new_start_);
+//  			new_finish_ = fill_n(new_finish_, n, val);
+//  			new_finish_ = copy(position, finish_, new_finish_);
+
 
 			destroy(start_, finish_);
 			deallocate();
