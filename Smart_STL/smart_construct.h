@@ -5,8 +5,8 @@
 #define _SMART_CONSTRUCT_H_
 
 #include <new> //利用其中的placement new
-#include "../smart_iterator_base.h"
-#include "../smart_type_traits.h"
+#include "smart_iterator_base.h"
+#include "smart_type_traits.h"
 
 
 namespace smart_stl
@@ -20,7 +20,7 @@ namespace smart_stl
 
 	//因为该函数比较短小，而且用到的时候非常多，所以采用inline的方式
 	template <class T1, class T2>
-	inline void construct(T1 * p, T2 value)
+	inline void construct(T1 * p, const T2& value)
 	{
 		//这里是对应placement new的应用方法，是在p指针上构建T1类型的数据，value是T2类型的，需要之前的强制转换
 		new (p) T1(value);
