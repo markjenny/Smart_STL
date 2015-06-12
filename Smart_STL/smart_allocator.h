@@ -34,7 +34,7 @@ namespace smart_stl
 			所以free 时候 能够记住原来指针所指的内存大小，而不是用内存块中是否有 \0 来临时计算指向内存的大小，不要字符串的计算长度的方法所误导。
 			还有一点要注意的就是，系统在free 内存的时候，记住的只是 malloc 时候的地址，和 分配内存的大小。*/
 			//上述原因就是为什么，malloc_alloc中的deallocate函数中时不要知道n*sizeof(T)的大小
-			static void deallocate(void *p, size_t)
+			static void deallocate (void *p, size_t)
 			{
 				free(p);
 			}
@@ -70,20 +70,22 @@ namespace smart_stl
 
 	void * allocator::oom_malloc(size_t n)
 	{
-		//oom_malloc的作用主要是在调用释放内存的函数
+		//oom_malloc的作用主要是在调用释放内存的函数，声明函数指针，my_oom_handler
 		void (*my_oom_handler)();
 		void *result;
 
 		//无线的释放、malloc知道产生内存
 		for ( ; ; )
 		{
-			//sgi的特点是成员函数中从不直接利用数据成员，都是利用《中间变量》导一下
+			//sgi的特点是成员函数中从不直接利用数据成员，都是利用【中间变量】导一下
 			my_oom_handler = malloc_alloc_oom_handler;
+			//《effective C++》退出的唯一条件malloc_alloc_oom_handler为null
 			if (0 == my_oom_handler)
 			{
 				_THROW_BAD_ALLOC_;
 			}
 			//调用函数指针的格式
+			(*my_oom_handler)();
 			result = malloc(n);
 			if (0 != result)
 				return result;
