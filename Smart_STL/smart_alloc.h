@@ -19,6 +19,7 @@ namespace smart_stl
 	class alloc
 	{
 	public:
+		//将与空间适配器相关的函数都定义成static是有原因的，直接把它们定义成static只属于这个类，而不属于任何对象
 		static void * allocate(size_t n);
 		//因为该模版只有“无模版型别参数”，所以只能用void型指针
 		static void deallocate(void *p, size_t n);
