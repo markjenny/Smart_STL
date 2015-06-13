@@ -3,6 +3,7 @@
 #include "smart_iterator_base.h"
 #include "smart_alloc.h"
 #include "smart_type_traits.h"
+#include "smart_functional.h"
 
 namespace smart_stl
 {
@@ -133,7 +134,7 @@ namespace smart_stl
 
 
 		/***************************************与容量相关**************************************************************/
-		size_type size() const;
+		size_type size();
 		bool empty() const {return nodeIter.nodePtr->next == nodeIter.nodePtr;}
 
 		/****************************************************************************************************************/
@@ -295,14 +296,14 @@ namespace smart_stl
 	template<class T, class Alloc>
 	bool operator == (const list<T, Alloc>& lhs, const list<T, Alloc>& rhs)
 	{
-		typename list<T, Alloc>::iterator lhs_startIter = typename list<T, Alloc>::iterator(lhs.nodeIter);
-		typename list<T, Alloc>::iterator rhs_startIter = typename list<T, Alloc>::iterator(rhs.nodeIter);
+		typename list<T, Alloc>::iterator lhs_startIter = typename list<T, Alloc>::iterator(lhs.nodeIter.nodePtr->next);
+		typename list<T, Alloc>::iterator rhs_startIter = typename list<T, Alloc>::iterator(rhs.nodeIter.nodePtr->next);
 		for (; lhs_startIter != lhs.nodeIter && rhs_startIter != rhs.nodeIter; lhs_startIter++, rhs_startIter++)
 		{
 			if (*lhs_startIter != *rhs_startIter)
 				return false;
 		}
-		if(lhs_startIter != lhs.nodeIter && rhs_startIter != rhs.nodeIter)
+		if(lhs_startIter != lhs.nodeIter || rhs_startIter != rhs.nodeIter)
 			return false;
 		return true;
 	}
@@ -315,7 +316,7 @@ namespace smart_stl
 
 	/***************************************与容量相关**************************************************************/
 	template<class T, class Alloc>
-	typename list<T, Alloc>::size_type list<T, Alloc>::size() const 
+	typename list<T, Alloc>::size_type list<T, Alloc>::size()
 	{
 		distance_type n = distance(begin(), end());
 		return (size_type)n;
@@ -331,10 +332,12 @@ namespace smart_stl
 		return nodeIter.nodePtr->next->data;
 	}
 
+
+	//和源码不同的地方
 	template<class T, class Alloc>
 	typename list<T, Alloc>::reference list<T, Alloc>::back()
 	{
-		return nodeIter.nodePtr->data;
+		return nodeIter.nodePtr->prev->data;
 	}
 	/****************************************************************************************************************/
 
@@ -396,15 +399,8 @@ namespace smart_stl
 	void list<T, Alloc>::insert(iterator positon, InputIterator first, InputIterator last)
 	{
 		//因为是inputIterator所以我们没有办法计算他们两个之间的距离
-		// 		for(; first != last; first++)
-		// 		{
-		// 			insert(positon, *first);
-		// 		}
-		//上面一段代码有错误，这是将first~last之间的元素进行了倒插！！
-		last--;
-		for(; last != first; last--)
-			insert(positon, *last);
-		insert(positon, *last);
+ 		for(; first != last; first++)
+ 			insert(positon, *first);
 	}
 	//
 	//需要注意的一点是，clear时是空链表，要保持有空链表的end
@@ -429,7 +425,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void list<T, Alloc>::swap(list& l)
 	{
-		swap(nodeIter, l.nodeIter);
+		smart_stl::swap(nodeIter, l.nodeIter);
 	}
 
 	template<class T, class Alloc>
@@ -556,7 +552,12 @@ namespace smart_stl
 		}
 	}
 
-	void merge(list& l);
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::merge(list& l)
+	{
+		merge(l, less<T>());
+	}
 
 	template<class T, class Alloc>
 	template<class Compare>
@@ -565,8 +566,8 @@ namespace smart_stl
 		iterator first1 = begin();
 		iterator last1 = end();
 
-		iterator first2 = begin();
-		iterator last2 = end();
+		iterator first2 = l.begin();
+		iterator last2 = l.end();
 
 		while(first1 != last1 && first2 != last2)
 		{
@@ -585,13 +586,65 @@ namespace smart_stl
 		if (first2 != last2)
 			transfer(last1, first2, last2);
 	}
-	// 
-	// 	void sort();
-	// 	//哲理的Compare就可以试仿函数，注重算法的思想而不是输入
-	// 	template<class Compare>
-	// 	void sort(Compare comp);
-	// 
-	// 	void reverse();
+	
+	template<class T, class Alloc>
+	void list<T, Alloc>::sort()
+	{
+		sort(less<T>());
+	}
+	// 	这里的Compare就可以试仿函数，注重算法的思想而不是输入
+	template<class T, class Alloc>
+ 	template<class Compare>
+	void list<T, Alloc>::sort(Compare comp)
+	{
+		//list的sort算法最厉害的地方就是不利用递归来完成归并算法，以减少深度递归带来的程序栈溢出
+		//【fill以内都是已经占有的了】，即是有相应的counter中出现过元素
+		//如果是空链表或者是只有一个元素，那么没有必要排序
+		if ( nodeIter.nodePtr->next == nodeIter.nodePtr || nodeIter.nodePtr->next->next == nodeIter.nodePtr )
+			return;
+		list<T, Alloc> carry;
+		list<T, Alloc> counter[64];
+		int fill = 0;
+		while(!empty())
+		{
+			int i = 0;
+			carry.splice(carry.begin(), *this, begin());
+			while(i < fill && !counter[i].empty())
+			{
+				counter[i].merge(carry, comp);
+				carry.swap(counter[i++]);
+			}
+			//退出循环一般是有两种情况，一种是counter[i]里面没有值，那么根据这个算法，没有值就直接放在这里，
+			//另外一种退出循环的可能是现在的fill不满足【进位】的情况了
+			carry.swap(counter[i]);
+			if (i == fill)
+				fill++;
+		}
+
+		for(int i = 1; i < fill; i++)
+			counter[i].merge(counter[i-1]);
+
+		(*this).swap(counter[fill-1]);
+
+	}
+
+	// reverse也是通过transfer实现的
+	template<class T, class Alloc>
+	void list<T, Alloc>::reverse()
+	{
+		//如果是空链表或者只有一个元素的链表，那么不需要进行reverse
+		if(nodeIter.nodePtr->next == nodeIter.nodePtr || nodeIter.nodePtr->next->next == nodeIter.nodePtr)
+			return;
+		iterator first = begin();
+		first++;
+
+		while(first != nodeIter)
+		{
+			iterator old = first;
+			first++;
+			transfer(begin(), old, first);
+		}
+	}
 	/****************************************************************************************************************/
 
 
@@ -631,7 +684,7 @@ namespace smart_stl
 		if (position != last)
 		{
 			//首先确定position前的位置，因为我们插入一个区间
-			link_type temp = position.nodePtr.prev;
+			link_type temp = position.nodePtr->prev;
 			link_type first_prev = first.nodePtr->prev;
 			link_type last_prev = last.nodePtr->prev;
 
