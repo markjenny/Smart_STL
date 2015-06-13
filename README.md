@@ -22,6 +22,10 @@ smart_stl组件进度：
 
 7.smart_vector完成进度：100%；
 
+8.smart_list完成进度：100%；
+
+9.smart_functional完成进度：100%；
+
 
 
 
@@ -41,3 +45,34 @@ smart_stl组件进度：
 
 
 #smart_st测试环境为MicroSoft Visual Studio 2008 && Windows & && Debug模式
+
+
+###vector相关测试：
+
+```
+#include <iostream>
+#include "smart_vector.h"
+using namespcace std;
+
+int main()
+{
+	double start,end,cost;
+	start=clock();
+	smart_stl::vector<int> smart_a;
+	for (int i = 0; i < 1000000; i++)
+	{
+		smart_a.push_back(i);
+		//cout << a.back() << endl;
+	}
+	end=clock();
+	cost= end - start;
+	cout << "利用smart_stl库中的push_back一百万个数时所用时间为：" << cost/CLOCKS_PER_SEC << "s" << endl;
+}
+```
+
+| 数量\时间       | smart_stl   |  sgi stl  |
+| -------   | -----:  | :----:  |
+| 1W     | 0.001s |   0.004s     |
+| 10W    |   0.006s   |   0.038s   |
+| 100W   |    0.057s    |  0.39s  |
+ 
