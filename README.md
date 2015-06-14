@@ -75,4 +75,30 @@ int main()
 | 1W     | 0.001s |   0.004s     |
 | 10W    |   0.006s   |   0.038s   |
 | 100W   |    0.057s    |  0.39s  |
+
+###list相关测试：
+```
+int a[10] = {12, 23 ,34 ,45, 56, 67, 78, 89, 90, 100};
+smart_stl::list<int> b(a, a + 10);
+b.reverse();
+for (smart_stl::list<int>::iterator iter = b.begin(); iter != b.end(); iter++)
+{
+cout << *iter << " ";
+}
+
+cout << endl;
+
+b.sort();
+for (smart_stl::list<int>::iterator iter = b.begin(); iter != b.end(); iter++)
+{
+cout << *iter << " ";
+}
+```
+
+输出结果：
+
+```
+100 90 89 78 67 56 45 34 23 12
+12 23 34 45 56 67 78 89 90 100
+```
  
