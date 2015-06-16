@@ -4,9 +4,9 @@
 a smart stl,no thread-safe
 
 
-#Smart_STL目前进度（2015/6/8）
+#Smart_STL目前进度（2015/6/15）
 
-smart_stl组件进度：
+##smart_stl组件进度：
 
 1.construct完成进度：100%；
 
@@ -26,11 +26,7 @@ smart_stl组件进度：
 
 9.smart_functional完成进度：100%；
 
-
-
-
-
-#smart_stl算法进度：
+##smart_stl算法进度：
 
 1.fill_n完成进度：100%；
 
