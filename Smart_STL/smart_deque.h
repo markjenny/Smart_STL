@@ -11,7 +11,7 @@ namespace smart_stl
 	//deque中的迭代器是比较特殊的迭代器，因为要考虑到从一个段跳到上一个段或者是下一个段
 	inline size_t deque_buf_size(size_t sz)
 	{
-		return n != 0 ? n : ( sz > 512 ? size_t(1) : size_t(512 / sz) );
+		return sz > 512 ? size_t(1) : size_t(512 / sz) ;
 	}
 
 	//用户应该不用去管每个bucket中有多少个元素，这样是没有意义的，这是相当于内部结构，用户在使用的时候也没有直接去
@@ -111,6 +111,7 @@ namespace smart_stl
 			++*this;
 			return temp;
 		}
+
 		self& operator -- ()
 		{
 			if (cur == first)
@@ -118,18 +119,63 @@ namespace smart_stl
 				set_node(node - 1);
 				cur = last;
 			}
-
 			cur--;
 			return *this;
 		}
-		self operator -- (int);
+
+		self operator -- (int)
+		{
+			iterator temp = &this;
+			--*this;
+			return temp;
+		}
+
+		//deque迭代器中重载操作符中最为复杂的一个，下面的懂可以根据这个来完成
 		self& operator += (distance_type n);
-		self operator + (distance_type n);
-		self& operator -= (distance_type n);
-		self operator - (distance_type n);
-		reference operator * ();
-		pointer operator -> ();
-		reference operator [] (distance_type n);
+		{
+			//计算从该段缓冲区中first起始偏移的位置
+			distance_type offset = n + (cur - first);
+			//判断这个偏移的位置是否是在本段中；因为起始位置是在first，那么你最多只能偏移0和buffer_size的距离
+			if(offset >= 0 && offset < buffer_size())
+				cur = first + offset;
+			else
+			{
+				//进入else表示要转移到的位置不在目前所处于的缓冲区中，这样我们就需要判断节点的偏移距离node_offset
+				//-offset的作用是实现offset去绝对值，这样就知道它跳转的距离，同时-offset-1就可以理解成将要转移的点，放到前一个缓冲区的last前的
+				//位置，这样更加方便后续的计算
+				distance_type node_offset = 
+					offset > 0 ? distance_type(offset / distance_type(buffer_size())) : -distance_type((-offset - 1) / distance_type(buffer_size())) - 1;
+
+				set_node(node + node_offset);
+
+				//记住offset是以first为起点，该公式对node_offset为正的时候满足，通过考虑它为负数时也是满足的，所以直接仅仅调用该表达式就是可以的
+				cur = first + (offset - node_offset * distance_type(buffer_size()));
+			}
+			return *this;
+		}
+
+		self operator + (distance_type n)
+		{
+			iterator temp = *this;
+			temp+=n;
+			return temp;
+		}
+
+		self& operator -= (distance_type n)
+		{
+			*this -= -n;
+		}
+
+		self operator - (distance_type n)
+		{
+			iterator temp = *this;
+			temp -= n;
+			return temp;
+		}
+
+		reference operator * () {return *cur;}
+		pointer operator -> () {return &(operator*());}
+		reference operator [] (distance_type n) {return *(*this + n);}
 
 
 		/*************************************************************************************************************************/
