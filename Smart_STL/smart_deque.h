@@ -46,17 +46,93 @@ namespace smart_stl
 		T* last;		//当前迭代器所指的缓冲区的终止点（不包括）
 		map_pointer node;		//中控区map中的node点
 
+		/*****************************************各种相关的构造函数、复制构造函数、assignment operator***********************/
+		deque_iterator() : cur(0), first(0), last(0), node(0) {}
 
-		//迭代器中所需要的各种操作符
+		deque_iterator(pointer x, map_pointer y) : cur(x), first(*y), last(*y + buffer_size()), node(y) {}
+
+		deque_iterator(const self& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter->node) {}
+
+		self& operator = (const self& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter.node) {}
+		/*************************************************************************************************************************/
+
+		/****************************************迭代器中所需要的各种操作符********************************************************/
 		//迭代器中所需要的各种逻辑比较符
 		//回顾一下list中的迭代器，它是只有operator==和operator！=，这是和它的具体结构有关，而deque的表面现象是与“vector”类似，
 		//所以有一些新的>，<，<+等操作
 		bool operator == (const self& deq_iter) {return cur == deq_iter.cur;}
-		bool operator != (const self& deq_iter);
-		bool operator > (const self& deq_iter);
-		bool operator >= (const self& deq_iter);
-		bool operator < (const self& deq_iter);
-		bool operator <= (const self& deq_iter);
+		bool operator != (const self& deq_iter) 
+		{
+			//tiny_stl受到了源码中operator<的影响，这里只比较deq_iter就可以，因为缓冲区中的每个点的cur都是不同的，即使
+			//是不同的map_pointer，因为都是从内存空间中分配出去的
+			return !(*this == deq_iter);
+		}
+		bool operator > (const self& deq_iter)
+		{
+			return  node == deq_iter.node ? cur > deq_iter.cur : node > deq_iter.node ; 
+		}
+
+		bool operator <= (const self& deq_iter)
+		{
+			return !( *this > deq_iter );
+		}
+
+		bool operator < (const self& deq_iter)
+		{
+			return !(deq_iter > *this);
+		}
+
+		bool operator >= (const self& deq_iter)
+		{
+			return !(*this < deq_iter);
+		}
+		/*************************************************************************************************************************/
+
+		/***********************************************相关的重载操作符*********************************************************/
+		distance_type operator - ( const self& deq_iter )
+		{
+			//这里需要说明的一点就是我们求得是*this和deq_iter之间的距离，而不是求*this和deq_iter之间有多少给数据，如果是求
+			//二者之间有多少个数据，那么应该在(cur-first)之间加上1，但是求得是距离，所以这里就直接写成(cur-first)
+			return (distance_type(buffer_size()) * (node - deq_iter.node - 1) + (cur - first) + (deq_iter.last - deq_iter.cur));
+		}
+
+		self& operator ++ ()
+		{
+			cur++;
+			if (cur == last)
+				set_node(node + 1);
+
+			cur = first;
+		}
+		
+		self operator ++ (int)
+		{
+			iterator temp = *this;
+			++*this;
+			return temp;
+		}
+		self& operator -- ()
+		{
+			if (cur == first)
+			{
+				set_node(node - 1);
+				cur = last;
+			}
+
+			cur--;
+			return *this;
+		}
+		self operator -- (int);
+		self& operator += (distance_type n);
+		self operator + (distance_type n);
+		self& operator -= (distance_type n);
+		self operator - (distance_type n);
+		reference operator * ();
+		pointer operator -> ();
+		reference operator [] (distance_type n);
+
+
+		/*************************************************************************************************************************/
 
 		//deque_iterator所要的特定迭代器，“跳转缓冲区”set_node
 		void set_node(map_pointer new_node)
@@ -64,6 +140,9 @@ namespace smart_stl
 			node = new_node;
 			first = *new_node;
 			last = first + distance_type(buffer_size());
+			//为了避免我忘记更改cur，我将cur设置成NULL，这样在对“没有赋值的cur”进行调用的时候就会产生错误，这样就可以发现没有
+			//对cur进行赋值这个问题
+			cur = NULL;
 		}
 	};
 }
