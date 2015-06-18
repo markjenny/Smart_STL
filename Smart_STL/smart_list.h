@@ -147,6 +147,8 @@ namespace smart_stl
 		/****************************************与访问元素相关*********************************************************/
 		reference front();
 		reference back();
+		const_reference front() const ;
+		const_reference back() const;
 		/****************************************************************************************************************/
 
 
@@ -246,7 +248,7 @@ namespace smart_stl
 	list<T, Alloc>::list(InputIterator first, InputIterator last)
 	{
 		typedef typename is_Integer<InputIterator>::class_type is_Int;
-		list_aux(first, last, is_Int);
+		list_aux(first, last, is_Int());
 	}
 
 
@@ -339,6 +341,19 @@ namespace smart_stl
 	{
 		return nodeIter.nodePtr->prev->data;
 	}
+
+	template<class T, class Alloc>
+	typename list<T, Alloc>::const_reference list<T, Alloc>::front() const
+	{
+		return nodeIter.nodePtr->next->data;
+	}
+
+	template<class T, class Alloc>
+	typename list<T, Alloc>::const_reference list<T, Alloc>::back() const
+	{
+		return nodeIter.nodePtr->prev->data;
+	}
+
 	/****************************************************************************************************************/
 
 
