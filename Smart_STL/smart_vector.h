@@ -181,6 +181,8 @@ namespace smart_stl
 		const_reference operator[](distance_type i) const {return *(cbegin() + i);}
 		reference front() {return (*begin());}
 		reference back() {return *(end() - 1);}
+		const_reference front() const {return *(begin()):}
+		const_reference back() const {return *(end() - 1);}
 
 		/*****
 		功能：C++11新增加的功能：返回容器指针
