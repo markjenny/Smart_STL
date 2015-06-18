@@ -2,7 +2,9 @@
 #define _SMART_DEQUE_H_
 #include "smart_alloc.h"
 #include "smart_iterator_base.h"
+#include "smart_alloc.h"
 #include <cstddef>
+#include <stdexcept>
 
 namespace smart_stl
 {
@@ -18,11 +20,15 @@ namespace smart_stl
 	//设定每个bucket中有多少个元素
 	//时刻记住deque拥有一个中控区，中控区上的每个点指向缓冲区，缓冲区中默认是有512bytes的空间，如果相关的类型是比512bytes大
 	//的话，缓冲区中就只存储这种类型的一个数据
+
+	//总结一下deque迭代器的特点，该迭代器的finish中是可以含有元素的，在缓冲区中用first和last进行标记，【finish迭代器】的cur
+	//指向的是该缓冲区中【没有元素的第一个点】，【start迭代器】的cur指向的是该缓冲区中【第一个元素】
 	template<class T, class Ref, class Ptr>
 	struct deque_iterator
 	{
 		//偏特化
 		//下面这个iterator应该是留给deque的数据结构用的
+		//没搞懂sgi_stl中这个有什么用？？？
 		typedef deque_iterator<T, T&, T*> iterator;
 		typedef deque_iterator<T, const T&, const T*> const_iterator;
 
@@ -190,6 +196,115 @@ namespace smart_stl
 			//对cur进行赋值这个问题
 			cur = NULL;
 		}
+	};
+
+
+	//因为在duque这个数据结构中，我们要用到两个关于不同类型的配置器，所以直接上alloc，不使用那个统一的接口simple_alloc
+	//
+	template<class T, class Alloc = alloc>
+	class duque
+	{
+	public:
+		typedef T value_type;
+		typedef T* pointer;
+		typedef T& reference;
+		typedef ptrdiff_t distance_type;
+
+		typedef const T* const_pointer;
+		typedef const T& const_reference;
+
+		typedef pointer map_pointer;
+		typedef size_t size_type;
+
+		//关于map的配置器和缓冲区的配置器
+		typedef simple_alloc<T, Alloc> node_allocator;
+		typedef simple_alloc<pointer, Alloc> map_allocator;
+
+		typedef deque_iterator<T, T&, T*> iterator;
+		//暂时想到利用下面这种const_iterator的可能：应该是我们遍历容器中的数据的时候，放置迭代器去更改其中的数据
+		typedef deque_iterator<T, const T&, const T*> const_iterator;
+
+
+	private:
+		iterator start_;
+		iterator finish_;
+
+		map_pointer map;
+		size_type map_size;
+
+	public:
+		/*****与构造函数、复制构造函数、assignment operator、析构函数（析构缓冲区上的所有元素，并且将map及所用到的缓冲区释放）***/
+		duque( ) : start_(0), finish_(0), map_size(0), map_pointer(0) {}
+		explicit deque(size_type n);
+		deque(size_type n, const value_type& val);
+		duque(const deque& deq);
+		deque& operator = (const deque& deq);
+		~deque();
+		/*********************************************************************************************************************************/
+
+
+		/*********************************************与逻辑比较相关*********************************************************************/
+		friend bool operator == (const deque& lhs, const deque& rhs);
+		friend bool operator != (const deque& lhs, const deque& rhs);
+		/*********************************************************************************************************************************/
+
+		/*********************************************与迭代器相关***********************************************************************/
+		iterator begin() {return start_;}
+		const_iterator begin() const {return start_;}
+		iterator end() {return finish_;}
+		const_iterator end() const {return finish_;}
+		/*********************************************************************************************************************************/
+
+		/*********************************************与容量相关*************************************************************************/
+		size_type size() {return finish_ - start_;}
+		bool empty() {return finish_ == start_;}
+		size_type max_size() {return size_type(-1)}
+		/*********************************************************************************************************************************/
+
+		/*********************************************与访问元素相关*********************************************************************/
+		reference front() {return *start_;}
+		reference back() {return *(finish_ - 1);}
+		const_reference front() const {return *start_;}
+		const_reference back() const {return *(finish_ - 1);}
+		//返回一个引用的元素在指定的位置pos。没有执行边界检查
+		reference operator [] (size_type n)
+		{
+			return start_[distance_type(n)];
+		}
+		const_reference operator [] (size_type n) const
+		{
+			return start_[distance_type(n)];
+		}
+
+		reference at(size_type pos)
+		{
+			if (pos >= size())
+				std::_Throw std:out_of_range();
+			else
+			{
+				return start_[distance_type(n)];
+			}
+			
+		}
+		/*********************************************************************************************************************************/
+
+		/*********************************************与改变容器相关**********************************************************************/
+		void clear();
+		iterator insert(iterator position, const value_type& val);
+		void insert(iterator position, size_type n, const value_type& val);
+		template<class InputIterator>
+		void insert(iterator position, InputIterator first, InoputIterator last);
+
+		iterator erase(iterator position);
+		iterator erase(iterator first, iterator last);
+
+		void resize(size_type n, const value_type& val);
+		void swap(const deque& deq);
+		void push_back(const  value_type& val);
+		void push_front(const value_type& val);
+		void pop_back();
+		void pop_front();
+		/*********************************************************************************************************************************/
 	};
 }
 
