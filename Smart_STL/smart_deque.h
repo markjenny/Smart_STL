@@ -3,6 +3,7 @@
 #include "smart_alloc.h"
 #include "smart_iterator_base.h"
 #include "smart_alloc.h"
+#include "smart_type_traits.h"
 #include "smart_uninitialized.h" 
 #include <cstddef>
 #include <stdexcept>
@@ -34,7 +35,7 @@ namespace smart_stl
 		typedef deque_iterator<T, T&, T*> iterator;
 		typedef deque_iterator<T, const T&, const T*> const_iterator;
 
-		static size_t buffer_size() {return deque_buf_size();}
+		static size_t buffer_size() {return deque_buf_size(sizeof(value_type));}
 
 		typedef random_access_iterator_tag iterator_category;
 		typedef T value_type;
@@ -59,9 +60,16 @@ namespace smart_stl
 
 		deque_iterator(pointer x, map_pointer y) : cur(x), first(*y), last(*y + buffer_size()), node(y) {}
 
-		deque_iterator(const self& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter->node) {}
+		deque_iterator(const self& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter.node) {}
 
-		self& operator = (const self& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter.node) {}
+		self& operator = (const self& deq_iter) 
+		{
+			cur = deq_iter.cur;
+			first = deq_iter.first;
+			last = deq_iter.last;
+			node = deq_iter.node;
+			return *this;
+		}
 		/*************************************************************************************************************************/
 
 		/****************************************迭代器中所需要的各种操作符********************************************************/
@@ -111,6 +119,7 @@ namespace smart_stl
 				set_node(node + 1);
 
 			cur = first;
+			return *this;
 		}
 		
 		self operator ++ (int)
@@ -139,7 +148,7 @@ namespace smart_stl
 		}
 
 		//deque迭代器中重载操作符中最为复杂的一个，下面的懂可以根据这个来完成
-		self& operator += (distance_type n);
+		self& operator += (distance_type n)
 		{
 			//计算从该段缓冲区中first起始偏移的位置
 			distance_type offset = n + (cur - first);
@@ -181,7 +190,10 @@ namespace smart_stl
 			return temp;
 		}
 
-		reference operator * () {return *cur;}
+		reference operator * () 
+		{
+			return *cur;
+		}
 		pointer operator -> () {return &(operator*());}
 		reference operator [] (distance_type n) {return *(*this + n);}
 
@@ -215,7 +227,7 @@ namespace smart_stl
 		typedef const T* const_pointer;
 		typedef const T& const_reference;
 
-		typedef pointer map_pointer;
+		typedef pointer* map_pointer;
 		typedef size_t size_type;
 
 		//关于map的配置器和缓冲区的配置器
@@ -239,7 +251,9 @@ namespace smart_stl
 		//start_和finish_自带的赋值构造函数可以满足相关的设定
 		deque( ) : start_(), finish_(), map_size(0), map_pointer(0) { fill_initialize(0, T()); }
 		explicit deque(size_type n) : start_(), finish_(), map(0), map_size(0) {fill_initialize(n, T());}
-		deque(size_type n, const value_type& val):start_(), finish_(), map(0), map_size(0) {fill_initialize(n, val);}
+		//一定要用is_Integer来区分下面两个！！！！！！！   
+		//deque(size_type n, const value_type& val):start_(), finish_(), map(0), map_size(0) {fill_initialize(n, val);}
+		deque(size_type n, const value_type& val);
 		template<class InputIterator>
 		deque(InputIterator first, InputIterator last);
 		deque(const deque& deq);
@@ -298,7 +312,7 @@ namespace smart_stl
 		iterator insert(iterator position, const value_type& val);
 		void insert(iterator position, size_type n, const value_type& val);
 		template<class InputIterator>
-		void insert(iterator position, InputIterator first, InoputIterator last);
+		void insert(iterator position, InputIterator first, InputIterator last);
 
 		iterator erase(iterator position);
 		iterator erase(iterator first, iterator last);
@@ -314,36 +328,47 @@ namespace smart_stl
 
 		/*****************************private函数*****************************************************************************************/
 		private:
-			enum INITIAL_MAP{INITIAL_MAP_SIZE = 8};
+			enum {INITIAL_MAP_SIZE = 8};
 			//不带参数的构造函数也是要使用这个函数的，只要把他的n设置为0就好了
 			void fill_initialize(size_type n, const value_type& val);
 			void create_map_and_nodes(size_type num_elements);
 			//为每个map中的点分配缓冲区
 			pointer allocate_node();
+			template<class Integer>
+			void deque_aux(Integer n, const value_type& val, _true_type);
+			template<class InputIterator>
+			void deque_aux(InputIterator first, InputIterator last, _false_type);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
+
+	//deque(size_type n, const value_type& val);
+	template<class T, class Alloc>
+	deque<T, Alloc>::deque(size_type n, const value_type& val)
+	{
+		typedef typename is_Integer<size_type>::class_type is_Int;
+		deque_aux(n, val, is_Int());
+	}
+
 	template<class T, class Alloc>
 	template<class InputIterator>
 	deque<T, Alloc>::deque(InputIterator first, InputIterator last)
 	{
-		size_type new_sz = last - first;
-		create_map_and_nodes(new_sz);
-		iterator temp = start_;
-		uninitialized_copy(first, last, start_);
+		typedef typename is_Integer<InputIterator>::class_type is_Int;
+		deque_aux(first, last, is_Int());
 	}
 
 	template<class T, class Alloc>
 	deque<T, Alloc>::deque(const deque& deq)
 	{
-		size_type new_sz = finish_ - start_;
+		size_type new_sz = deq.finish_ - deq.start_;
 		create_map_and_nodes(new_sz);
 		iterator temp = start_;
 		uninitialized_copy(deq.start_, deq.finish_, start_);
 	}
 
 	template<class T, class Alloc>
-	deque<T, Alloc>::deque& deque<T, Alloc>::operator = (const deque& deq)
+	deque<T, Alloc>& deque<T, Alloc>::operator = (const deque& deq)
 	{
 		size_type new_sz = finish_ - start_;
 		create_map_and_nodes(new_sz);
@@ -353,14 +378,20 @@ namespace smart_stl
 	}
 
 	template<class T, class Alloc>
+	deque<T, Alloc>::~deque()
+	{
+
+	}
+
+	template<class T, class Alloc>
 	void deque<T, Alloc>::fill_initialize(size_type n, const value_type& val)
 	{
 		//构建新表的时候，对start_和finish_已经构建好了
-		create_map_and_nodes();
+		create_map_and_nodes(n);
 		map_pointer cur;
 		//遍历map中有缓冲区的点
 		for (cur = start_.node; cur < finish_.node; cur++)
-			uninitialized_fill(*cur, *(cur + deque_buf_size()), val);
+			uninitialized_fill(*cur, *(cur + deque_buf_size(sizeof(value_type))), val);
 
 		uninitialized_fill(finish_.first, finish_.cur, val);
 	}
@@ -368,9 +399,9 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void deque<T, Alloc>::create_map_and_nodes(size_type num_elements)
 	{
-		size_type num_nodes = num_elements / deque_buf_size() + 1;
+		size_type num_nodes = num_elements / deque_buf_size(sizeof(value_type)) + 1;
 
-		map_size = std::max(INITIAL_MAP_SIZE, num_nodes + 2);
+		map_size = max(INITIAL_MAP_SIZE, num_nodes + 2);
 		map = map_allocator::allocate(map_size);
 
 		map_pointer nstart = map + (map_size - num_nodes) / 2;
@@ -385,13 +416,30 @@ namespace smart_stl
 		start_.set_node(nstart);
 		finish_.set_node(nfinish);
 		start_.cur = start_.first;
-		finish_.cur = finish_.first + num_elements / (deque_buf_size());
+		finish_.cur = finish_.first + num_elements % (deque_buf_size(sizeof(value_type)));
 	}
 
 	template<class T, class Alloc>
 	typename deque<T, Alloc>::pointer deque<T, Alloc>::allocate_node()
 	{
-		return node_allocator::allocate(deque_buf_size());
+		return node_allocator::allocate(deque_buf_size(sizeof(value_type)));
+	}
+
+	template<class T, class Alloc>
+	template<class Integer>
+	void deque<T, Alloc>::deque_aux(Integer n, const value_type& val, _true_type)
+	{
+		fill_initialize(n, val);
+	}
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	void deque<T, Alloc>::deque_aux(InputIterator first, InputIterator last, _false_type)
+	{
+		size_type new_sz = last - first;
+		create_map_and_nodes(new_sz);
+		iterator temp = start_;
+		uninitialized_copy(first, last, start_);
 	}
 
 }
