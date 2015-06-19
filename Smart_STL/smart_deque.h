@@ -3,8 +3,10 @@
 #include "smart_alloc.h"
 #include "smart_iterator_base.h"
 #include "smart_alloc.h"
+#include "smart_uninitialized.h" 
 #include <cstddef>
 #include <stdexcept>
+#include <algorithm>
 
 namespace smart_stl
 {
@@ -202,7 +204,7 @@ namespace smart_stl
 	//因为在duque这个数据结构中，我们要用到两个关于不同类型的配置器，所以直接上alloc，不使用那个统一的接口simple_alloc
 	//
 	template<class T, class Alloc = alloc>
-	class duque
+	class deque
 	{
 	public:
 		typedef T value_type;
@@ -234,10 +236,13 @@ namespace smart_stl
 
 	public:
 		/*****与构造函数、复制构造函数、assignment operator、析构函数（析构缓冲区上的所有元素，并且将map及所用到的缓冲区释放）***/
-		duque( ) : start_(0), finish_(0), map_size(0), map_pointer(0) {}
-		explicit deque(size_type n);
-		deque(size_type n, const value_type& val);
-		duque(const deque& deq);
+		//start_和finish_自带的赋值构造函数可以满足相关的设定
+		deque( ) : start_(), finish_(), map_size(0), map_pointer(0) { fill_initialize(0, T()); }
+		explicit deque(size_type n) : start_(), finish_(), map(0), map_size(0) {fill_initialize(n, T());}
+		deque(size_type n, const value_type& val):start_(), finish_(), map(0), map_size(0) {fill_initialize(n, val);}
+		template<class InputIterator>
+		deque(InputIterator first, InputIterator last);
+		deque(const deque& deq);
 		deque& operator = (const deque& deq);
 		~deque();
 		/*********************************************************************************************************************************/
@@ -305,7 +310,90 @@ namespace smart_stl
 		void pop_back();
 		void pop_front();
 		/*********************************************************************************************************************************/
+
+
+		/*****************************private函数*****************************************************************************************/
+		private:
+			enum INITIAL_MAP{INITIAL_MAP_SIZE = 8};
+			//不带参数的构造函数也是要使用这个函数的，只要把他的n设置为0就好了
+			void fill_initialize(size_type n, const value_type& val);
+			void create_map_and_nodes(size_type num_elements);
+			//为每个map中的点分配缓冲区
+			pointer allocate_node();
 	};
+
+	/*****************************************************【deque的相关实现】************************************************************/
+	template<class T, class Alloc>
+	template<class InputIterator>
+	deque<T, Alloc>::deque(InputIterator first, InputIterator last)
+	{
+		size_type new_sz = last - first;
+		create_map_and_nodes(new_sz);
+		iterator temp = start_;
+		uninitialized_copy(first, last, start_);
+	}
+
+	template<class T, class Alloc>
+	deque<T, Alloc>::deque(const deque& deq)
+	{
+		size_type new_sz = finish_ - start_;
+		create_map_and_nodes(new_sz);
+		iterator temp = start_;
+		uninitialized_copy(deq.start_, deq.finish_, start_);
+	}
+
+	template<class T, class Alloc>
+	deque<T, Alloc>::deque& deque<T, Alloc>::operator = (const deque& deq)
+	{
+		size_type new_sz = finish_ - start_;
+		create_map_and_nodes(new_sz);
+		iterator temp = start_;
+		uninitialized_copy(deq.start_, deq.finish_, start_);
+		return *this;
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::fill_initialize(size_type n, const value_type& val)
+	{
+		//构建新表的时候，对start_和finish_已经构建好了
+		create_map_and_nodes();
+		map_pointer cur;
+		//遍历map中有缓冲区的点
+		for (cur = start_.node; cur < finish_.node; cur++)
+			uninitialized_fill(*cur, *(cur + deque_buf_size()), val);
+
+		uninitialized_fill(finish_.first, finish_.cur, val);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::create_map_and_nodes(size_type num_elements)
+	{
+		size_type num_nodes = num_elements / deque_buf_size() + 1;
+
+		map_size = std::max(INITIAL_MAP_SIZE, num_nodes + 2);
+		map = map_allocator::allocate(map_size);
+
+		map_pointer nstart = map + (map_size - num_nodes) / 2;
+		map_pointer nfinish = nstart + num_nodes - 1;
+
+		map_pointer cur = nstart;
+		for (; cur <= nfinish; cur++)
+		{
+			*cur = allocate_node();
+		}
+
+		start_.set_node(nstart);
+		finish_.set_node(nfinish);
+		start_.cur = start_.first;
+		finish_.cur = finish_.first + num_elements / (deque_buf_size());
+	}
+
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::pointer deque<T, Alloc>::allocate_node()
+	{
+		return node_allocator::allocate(deque_buf_size());
+	}
+
 }
 
 
