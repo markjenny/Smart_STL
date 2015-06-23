@@ -5,6 +5,7 @@
 #include "smart_alloc.h"
 #include "smart_type_traits.h"
 #include "smart_uninitialized.h" 
+#include "smart_construct.h"
 #include <cstddef>
 #include <stdexcept>
 #include <algorithm>
@@ -116,9 +117,10 @@ namespace smart_stl
 		{
 			cur++;
 			if (cur == last)
+			{
 				set_node(node + 1);
-
-			cur = first;
+				cur = first;
+			}
 			return *this;
 		}
 		
@@ -205,7 +207,7 @@ namespace smart_stl
 		{
 			node = new_node;
 			first = *new_node;
-			last = first + distance_type(buffer_size());
+			last = first + distance_type(deque_buf_size(sizeof(value_type)));
 			//为了避免我忘记更改cur，我将cur设置成NULL，这样在对“没有赋值的cur”进行调用的时候就会产生错误，这样就可以发现没有
 			//对cur进行赋值这个问题
 			cur = NULL;
@@ -338,6 +340,10 @@ namespace smart_stl
 			void deque_aux(Integer n, const value_type& val, _true_type);
 			template<class InputIterator>
 			void deque_aux(InputIterator first, InputIterator last, _false_type);
+			//释放缓冲区
+			void deallocate_node(pointer p);
+			//释放中控区
+			void deallocate_map(map_pointer mp);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -380,7 +386,15 @@ namespace smart_stl
 	template<class T, class Alloc>
 	deque<T, Alloc>::~deque()
 	{
-
+		//析构deque上面的所有函数
+		destroy(start_, finish_);
+		//释放各个节点上的缓冲区
+		for (iterator temp = start_; temp != finish_; temp++)
+		{
+			deallocate_node(temp.first);
+		}
+		deallocate_node(finish_.first);
+		//释放中控区map
 	}
 
 	template<class T, class Alloc>
@@ -440,6 +454,18 @@ namespace smart_stl
 		create_map_and_nodes(new_sz);
 		iterator temp = start_;
 		uninitialized_copy(first, last, start_);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::deallocate_node(pointer p)
+	{
+		node_allocator::deallocate(p, deque_buf_size(sizeof(value_type)));
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::deallocate_map(map_pointer mp)
+	{
+		map_allocator::deallocate(mp, map_size);
 	}
 
 }
