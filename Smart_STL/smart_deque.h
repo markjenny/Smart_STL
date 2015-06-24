@@ -389,12 +389,37 @@ namespace smart_stl
 		//析构deque上面的所有函数
 		destroy(start_, finish_);
 		//释放各个节点上的缓冲区
-		for (iterator temp = start_; temp != finish_; temp++)
+		for (map_pointer temp = start_.node; temp != finish_.node; temp++)
 		{
-			deallocate_node(temp.first);
+			deallocate_node(*temp);
 		}
-		deallocate_node(finish_.first);
+		deallocate_node(*finish_.node);
 		//释放中控区map
+		deallocate_map(map);
+	}
+
+	template<class T, class Alloc>
+	bool operator == (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
+	{
+		const_iterator tempLhs = lhs.start_;
+		const_iterator tempRhs = rhs.start_;
+
+		for (; tempLhs != lhs.finish_ && tempRhs != rhs.finish_; tempLhs++, tempRhs++)
+		{
+			if (*tempLhs != *tempRhs)
+				return false;
+		}
+
+		if(tempLhs != lhs.finish_ || tempRhs != rhs.finish_)
+			return false;
+
+		return true;
+	}
+
+	template<class T, class Alloc>
+	bool operator != (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
+	{
+		return !(lhs == rhs);
 	}
 
 	template<class T, class Alloc>
