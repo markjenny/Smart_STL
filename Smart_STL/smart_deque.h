@@ -208,7 +208,8 @@ namespace smart_stl
 			last = first + distance_type(deque_buf_size(sizeof(value_type)));
 			//为了避免我忘记更改cur，我将cur设置成NULL，这样在对“没有赋值的cur”进行调用的时候就会产生错误，这样就可以发现没有
 			//对cur进行赋值这个问题
-			cur = NULL;
+			//更正，我对这个set_node理解错误，它真正的目的应该是仅设定node，顺带限定了first和last，如果将cur设定成NULL，后面的reallocate_map使用就不是很顺利
+			//cur = NULL;
 		}
 
 		template<class T, class Ref, class Ptr>
@@ -397,6 +398,10 @@ namespace smart_stl
 			//释放中控区
 			void deallocate_map(map_pointer mp);
 			void push_back_aux(const value_type& val);
+			void reserve_map_back(size_type nodes_to_add = 1);
+			void reallocate_map(size_type nodes_to_add, bool add_at_front);
+			void push_front_aux(const value_type& val);
+			void reserve_map_front(size_type nodes_to_add = 1);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -486,7 +491,22 @@ namespace smart_stl
 		else
 			push_back_aux(val);
 	}
-	void push_front(const value_type& val);
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::push_front(const value_type& val)
+	{
+		//关于为什么在push_front的时候，只有看缓冲区中有一个配用元素，而在push_back的时候要看有两个配用元素？因为finish中的cur是空的，一直要保持是空的
+		//只要有一个配用元素就可以放置
+		if(start_.cur != start_.first)
+		{
+			construct(start_.cur, val);
+			--start_.cur;
+		}
+		else
+			//没有备用空间了，需要另外使用空间
+			push_front_aux(val);
+	}
+
 	void pop_back();
 	void pop_front();
 	/*********************************************************************************************************************************/
@@ -592,6 +612,96 @@ namespace smart_stl
 	{
 		//查看是否有必要重新整理map中控点或重新分配map区
 		reserve_map_back();
+		//增加新的缓冲区
+		*(finish_.node + 1) = allocate_node();
+		try
+		{
+			//异常处理
+			construct(finish_.cur, val);
+			finish_.set_node(finish_.node + 1);
+			finish_.cur = finish_.first;
+		}
+		catch(...)
+		{
+			node_allocator::deallocate(*(finish_.node + 1));
+			//安全处理后要抛出异常
+			throw;
+		}
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::reserve_map_back(size_type nodes_to_add = 1)
+	{
+		if ( (finish_.node - map +1) + nodes_to_add > map_size)
+			reallocate_map(nodes_to_add, false);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::reallocate_map(size_type nodes_to_add, bool add_at_front)
+	{
+		size_type old_node_size = finish_.node - start_.node + 1;
+		size_type new_node_size = old_node_size + nodes_to_add;
+		//判断是否有足够的空间，若有，那么不必新建空间
+		map_pointer new_nstart_;
+		if (map_size > 2 * new_node_size)
+		{
+			new_nstart_ = map + (map_size - new_node_size) / 2 +
+				(true == add_at_front) ? nodes_to_add : 0;
+
+			if (new_nstart_ < start_.node)
+				copy(start_.node, finish_.node + 1, new_nstart_);
+			else
+				copy_backward(start_.node, finish_.node + 1, new_nstart_);
+		}
+		else
+		{
+			size_type new_map_size = map_size + max(map_size, new_node_size) + 2;
+			map_pointer new_map = map_allocator::allocate(new_map_size);
+
+			new_nstart_ = new_map + (new_map_size - new_node_size) / 2 + 
+				(true == add_at_front) ? nodes_to_add : 0;
+			//把原map的内容拷贝过来
+			copy(start_.node, finish_.node + 1, new_nstart_);
+			//析构原来的map中控区
+			//注意这里直接释放内容就可以了，因为存放的是16进制数，不存在对象，所以不用析构
+			map_allocator::deallocate(map, map_size);
+
+			map = new_map;
+			map_size = new_map_size;
+		}
+
+		//重新设定start_和finish_的node，因为node已经重新分配了，所以start_和finish_中node对应的地方已经产生变化了，所以要重新分配
+		start_.set_node(new_nstart_);
+		finish_.set_node(new_nstart_ + old_node_size - 1);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::push_front_aux(const value_type& val)
+	{
+		reserve_map_front();
+		*(start_.node - 1) = allocate_node();
+
+		try
+		{
+			start_.set_node(start_.node - 1);
+			start_.cur = start_.last - 1;
+			construct(start_.cur, val);
+		}
+		catch(...)
+		{
+			//commit or rollback
+			start_.set_node(start_.node + 1);
+			start_.cur = start_.first;
+			deallocate_node(*(start_.node - 1));
+			throw;
+		}
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::reserve_map_front(size_type nodes_to_add  = 1 )
+	{
+		if (start_.node - map < nodes_to_add)
+			reallocate_map(nodes_to_add, true);
 	}
 
 }
