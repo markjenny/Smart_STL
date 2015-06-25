@@ -61,9 +61,9 @@ namespace smart_stl
 
 		deque_iterator(pointer x, map_pointer y) : cur(x), first(*y), last(*y + buffer_size()), node(y) {}
 
-		deque_iterator(const self& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter.node) {}
+		deque_iterator(const iterator& deq_iter) : cur(deq_iter.cur), first(deq_iter.first), last(deq_iter.last), node(deq_iter.node) {}
 
-		self& operator = (const self& deq_iter) 
+		self& operator = (const iterator& deq_iter) 
 		{
 			cur = deq_iter.cur;
 			first = deq_iter.first;
@@ -77,29 +77,29 @@ namespace smart_stl
 		//迭代器中所需要的各种逻辑比较符
 		//回顾一下list中的迭代器，它是只有operator==和operator！=，这是和它的具体结构有关，而deque的表面现象是与“vector”类似，
 		//所以有一些新的>，<，<+等操作
-		bool operator == (const self& deq_iter) {return cur == deq_iter.cur;}
-		bool operator != (const self& deq_iter) 
+		bool operator == (const iterator& deq_iter) {return cur == deq_iter.cur;}
+		bool operator != (const iterator& deq_iter) 
 		{
 			//tiny_stl受到了源码中operator<的影响，这里只比较deq_iter就可以，因为缓冲区中的每个点的cur都是不同的，即使
 			//是不同的map_pointer，因为都是从内存空间中分配出去的
 			return !(*this == deq_iter);
 		}
-		bool operator > (const self& deq_iter)
+		bool operator > (const iterator& deq_iter)
 		{
 			return  node == deq_iter.node ? cur > deq_iter.cur : node > deq_iter.node ; 
 		}
 
-		bool operator <= (const self& deq_iter)
+		bool operator <= (const iterator& deq_iter)
 		{
 			return !( *this > deq_iter );
 		}
 
-		bool operator < (const self& deq_iter)
+		bool operator < (const iterator& deq_iter)
 		{
 			return !(deq_iter > *this);
 		}
 
-		bool operator >= (const self& deq_iter)
+		bool operator >= (const iterator& deq_iter)
 		{
 			return !(*this < deq_iter);
 		}
@@ -198,8 +198,6 @@ namespace smart_stl
 		}
 		pointer operator -> () {return &(operator*());}
 		reference operator [] (distance_type n) {return *(*this + n);}
-
-
 		/*************************************************************************************************************************/
 
 		//deque_iterator所要的特定迭代器，“跳转缓冲区”set_node
@@ -212,7 +210,59 @@ namespace smart_stl
 			//对cur进行赋值这个问题
 			cur = NULL;
 		}
+
+		template<class T, class Ref, class Ptr>
+		friend deque_iterator<T, Ref, Ptr> operator + (const deque_iterator<T, Ref, Ptr>& it, typename deque_iterator<T, Ref, Ptr>::distance_type n);
+		template<class T, class Ref, class Ptr>
+		friend deque_iterator<T, Ref, Ptr> operator + (typename deque_iterator<T, Ref, Ptr>::distance_type n, const deque_iterator<T, Ref, Ptr>& it);
+		template<class T, class Ref, class Ptr>
+		friend deque_iterator<T, Ref, Ptr> operator - (const deque_iterator<T, Ref, Ptr>& it, typename deque_iterator<T, Ref, Ptr>::distance_type n);
+		template<class T, class Ref, class Ptr>
+		friend typename deque_iterator<T, Ref, Ptr>::distance_type operator - (const deque_iterator<T, Ref, Ptr>& it1, const deque_iterator<T, Ref, Ptr>& it2);
 	};
+
+	template<class T, class Ref, class Ptr>
+	deque_iterator<T, Ref, Ptr> operator + (const deque_iterator<T, Ref, Ptr>& it, typename deque_iterator<T, Ref, Ptr>::distance_type n)
+	{
+		//左操作数都是const类型的，所以要重载一个operator+
+		//using deque_iterator<T, Ref, Ptr>;
+		deque_iterator<T, Ref, Ptr> temp(it);
+		deque_iterator<T, Ref, Ptr>::distance_type offset = (temp.cur - temp.first) + n;
+		deque_iterator<T, Ref, Ptr>::distance_type nodePageSize = deque_iterator<T, Ref, Ptr>::distance_type(deque_buf_size(sizeof(typename deque_iterator<T, Ref, Ptr>::value_type)));
+		//在同一个bucket中
+		if(offset >=0 && offset < nodePageSize)
+			temp.cur += n;
+		else
+		{
+			//分成了正增长和负增长
+			deque_iterator<T, Ref, Ptr>::distance_type offset_node = 
+				offset > 0 ? offset / nodePageSize
+				: -deque_iterator<T, Ref, Ptr>::distance_type((-offset -1) / nodePageSize) - 1;
+			deque_iterator<T, Ref, Ptr>::set_node(offset_node);
+			temp.cur = temp.first + offset - offset_node * nodePageSize;
+		}
+		return temp;
+	}
+
+	template<class T, class Ref, class Ptr>
+	deque_iterator<T, Ref, Ptr> operator + (typename deque_iterator<T, Ref, Ptr>::distance_type n, const deque_iterator<T, Ref, Ptr>& it)
+	{
+		return it + n;
+	}
+
+	template<class T, class Ref, class Ptr>
+	deque_iterator<T, Ref, Ptr> operator - (const deque_iterator<T, Ref, Ptr>& it, typename deque_iterator<T, Ref, Ptr>::distance_type n)
+	{
+		return it + (-n);
+	}
+
+	template<class T, class Ref, class Ptr>
+	typename deque_iterator<T, Ref, Ptr>::distance_type operator - (const deque_iterator<T, Ref, Ptr>& it1, const deque_iterator<T, Ref, Ptr>& it2)
+	{
+		typedef deque_iterator<T, Ref, Ptr>::distance_type distance_type;
+		typedef deque_iterator<T, Ref, Ptr>::value_type value_type;
+		return distance_type( ( it1.cur - it1.first ) + (it1.node - it2.node - 1) * distance_type(deque_buf_size(sizeof(value_type))) + ( it2.last - it2.cur ) );
+	}
 
 
 	//因为在duque这个数据结构中，我们要用到两个关于不同类型的配置器，所以直接上alloc，不使用那个统一的接口simple_alloc
@@ -265,8 +315,10 @@ namespace smart_stl
 
 
 		/*********************************************与逻辑比较相关*********************************************************************/
-		friend bool operator == (const deque& lhs, const deque& rhs);
-		friend bool operator != (const deque& lhs, const deque& rhs);
+		template<class T, class Alloc>
+		friend bool operator == (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
+		template<class T, class Alloc>
+		friend bool operator != (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
 		/*********************************************************************************************************************************/
 
 		/*********************************************与迭代器相关***********************************************************************/
@@ -279,7 +331,7 @@ namespace smart_stl
 		/*********************************************与容量相关*************************************************************************/
 		size_type size() {return finish_ - start_;}
 		bool empty() {return finish_ == start_;}
-		size_type max_size() {return size_type(-1)}
+		size_type max_size() {return size_type(-1);}
 		/*********************************************************************************************************************************/
 
 		/*********************************************与访问元素相关*********************************************************************/
@@ -344,6 +396,7 @@ namespace smart_stl
 			void deallocate_node(pointer p);
 			//释放中控区
 			void deallocate_map(map_pointer mp);
+			void push_back_aux(const value_type& val);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -367,19 +420,27 @@ namespace smart_stl
 	template<class T, class Alloc>
 	deque<T, Alloc>::deque(const deque& deq)
 	{
-		size_type new_sz = deq.finish_ - deq.start_;
-		create_map_and_nodes(new_sz);
-		iterator temp = start_;
-		uninitialized_copy(deq.start_, deq.finish_, start_);
+		distance_type new_elements = deq.finish_ - deq.start_;
+		create_map_and_nodes(new_elements);
+		iterator temp1 = start_;
+		for (iterator temp2 = deq.start_; temp2 != deq.finish_; temp2++)
+		{
+			construct(&*temp2, *temp1);
+			temp1++;
+		}
 	}
 
 	template<class T, class Alloc>
 	deque<T, Alloc>& deque<T, Alloc>::operator = (const deque& deq)
 	{
-		size_type new_sz = finish_ - start_;
-		create_map_and_nodes(new_sz);
-		iterator temp = start_;
-		uninitialized_copy(deq.start_, deq.finish_, start_);
+		distance_type new_elements = deq.finish_ - deq.start_;
+		create_map_and_nodes(new_elements);
+		iterator temp1 = start_;
+		for (iterator temp2 = deq.start_; temp2 != deq.finish_; temp2++)
+		{
+			construct(&*temp2, *temp1);
+			temp1++;
+		}
 		return *this;
 	}
 
@@ -398,11 +459,44 @@ namespace smart_stl
 		deallocate_map(map);
 	}
 
+
+	/*********************************************与改变容器相关**********************************************************************/
+	void clear();
+	iterator insert(iterator position, const value_type& val);
+	void insert(iterator position, size_type n, const value_type& val);
+	template<class InputIterator>
+	void insert(iterator position, InputIterator first, InputIterator last);
+
+	iterator erase(iterator position);
+	iterator erase(iterator first, iterator last);
+
+	void resize(size_type n, const value_type& val);
+	void swap(const deque& deq);
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::push_back(const  value_type& val)
+	{
+		//首先检测finish_对应的缓冲区中是否是最后一个元素，如果是最后一个元素的话那么就需要重新配置缓冲区给下一个map_node
+		if(finish_.cur != finish_.last - 1)
+		{
+			//因为是uninitialized memory，所以要进行construct，因为有指针，所以采用new placement的方法
+			construct(finish_.cur, val);
+			++finish_.cur;
+		}
+		else
+			push_back_aux(val);
+	}
+	void push_front(const value_type& val);
+	void pop_back();
+	void pop_front();
+	/*********************************************************************************************************************************/
+
+
 	template<class T, class Alloc>
 	bool operator == (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
 	{
-		const_iterator tempLhs = lhs.start_;
-		const_iterator tempRhs = rhs.start_;
+		typename deque<T, Alloc>::iterator tempLhs = lhs.start_;
+		typename deque<T, Alloc>::iterator tempRhs = rhs.start_;
 
 		for (; tempLhs != lhs.finish_ && tempRhs != rhs.finish_; tempLhs++, tempRhs++)
 		{
@@ -491,6 +585,13 @@ namespace smart_stl
 	void deque<T, Alloc>::deallocate_map(map_pointer mp)
 	{
 		map_allocator::deallocate(mp, map_size);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::push_back_aux(const value_type& val)
+	{
+		//查看是否有必要重新整理map中控点或重新分配map区
+		reserve_map_back();
 	}
 
 }
