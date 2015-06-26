@@ -402,6 +402,8 @@ namespace smart_stl
 			void reallocate_map(size_type nodes_to_add, bool add_at_front);
 			void push_front_aux(const value_type& val);
 			void reserve_map_front(size_type nodes_to_add = 1);
+			void pop_back_aux();
+			void pop_front_aux();
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -466,17 +468,49 @@ namespace smart_stl
 
 
 	/*********************************************与改变容器相关**********************************************************************/
-	void clear();
-	iterator insert(iterator position, const value_type& val);
-	void insert(iterator position, size_type n, const value_type& val);
+	//deque的clear是要消除全部的元素，但是保留一个缓冲区
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::clear()
+	{
+		//针对头尾节点以外的缓冲区(因为这写缓冲区中一定是满的)
+		for (map_pointer nodeTemp = start_.node + 1; nodeTemp < finish_.node; nodeTemp++)
+		{
+			//对缓冲区中的元素进行析构
+			destroy(*nodeTemp, *nodeTemp + (distance_type)deque_buf_size(sizeof(value_type)));
+			node_allocator::deallocate(*nodeTemp, (distance_type)deque_buf_size(sizeof(value_type)));
+		}
+		//头尾都有缓冲区，我们就要保留一个缓冲区
+		if (start_.node != finish_.node)
+		{
+			destroy(start_.cur, start_.last);
+			destroy(finish_.first, finish_.cur);
+			node_allocator::deallocate(*finish_.node, (distance_type)deque_buf_size(sizeof(value_type));
+		}
+		else
+			//只有一个缓冲区的时候要注意了，是start.cur到ffinish_.cur！！
+			destroy(start_.cur, finish_.cur);
+		//start_.cur就是现在start的状态，所以不用进行重新分配cur
+		finish_ = start_;
+	}
+	二、iterator insert(iterator position, const value_type& val);
+	三、void insert(iterator position, size_type n, const value_type& val);
 	template<class InputIterator>
-	void insert(iterator position, InputIterator first, InputIterator last);
+	四、void insert(iterator position, InputIterator first, InputIterator last);
 
-	iterator erase(iterator position);
-	iterator erase(iterator first, iterator last);
+	五、iterator erase(iterator position);
+	六、iterator erase(iterator first, iterator last);
 
-	void resize(size_type n, const value_type& val);
-	void swap(const deque& deq);
+	七、void resize(size_type n, const value_type& val);
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::swap(const deque& deq)
+	{
+		smart_stl::swap(map, deq.map);
+		smart_stl::swap(map_size, deq.map_size);
+		smart_stl::swap(start_, deq.start_);
+		smart_stl::swap(finish_, deq.finish_);
+	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::push_back(const  value_type& val)
@@ -507,8 +541,30 @@ namespace smart_stl
 			push_front_aux(val);
 	}
 
-	void pop_back();
-	void pop_front();
+	template<class T, class Alloc>
+	void deque<T, Alloc>::pop_back()
+	{
+		if (finish_.cur != finish_.first)
+		{
+			//表明缓冲区中还有至少一个元素
+			--(finish_.cur);
+			destroy(finish_.cur);
+		}
+		else
+			pop_back_aux();
+	}
+	template<class T, class Alloc>
+	void deque<T, Alloc>::pop_front()
+	{
+		//缓冲区中至少有两个元素
+		if (start_.cur != start_.last - 1)
+		{
+			destroy(start_.cur);
+			(start_.cur)++;
+		}
+		else
+			pop_front_aux();
+	}
 	/*********************************************************************************************************************************/
 
 
@@ -702,6 +758,25 @@ namespace smart_stl
 	{
 		if (start_.node - map < nodes_to_add)
 			reallocate_map(nodes_to_add, true);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::pop_back_aux()
+	{
+		//finish_中缓冲区没有元素
+		deallocate_node(finish_.first);
+		finish_.set_node(finish_.node - 1);
+		finish_.cur = finish_.last - 1;
+		destroy(finish_.cur);
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::pop_front_aux()
+	{
+		destroy(start_.cur);
+		start_.set_node(start_.node + 1);
+		start_.cur = start_.first;
+		node_allocator(*(start_.node - 1));
 	}
 
 }
