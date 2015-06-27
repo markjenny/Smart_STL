@@ -6,6 +6,7 @@
 #include "smart_type_traits.h"
 #include "smart_uninitialized.h" 
 #include "smart_construct.h"
+#include "smart_algorithm.h"
 #include <cstddef>
 #include <stdexcept>
 #include <algorithm>
@@ -493,15 +494,107 @@ namespace smart_stl
 		//start_.cur就是现在start的状态，所以不用进行重新分配cur
 		finish_ = start_;
 	}
-	二、iterator insert(iterator position, const value_type& val);
+
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::iterator deque<T, Alloc>::insert(iterator position, const value_type& val)
+	{
+		if (position.cur == start_.cur)
+		{
+			push_front(val);
+			return start_;
+		}
+		else if (position.cur == finish_.cur)
+		{
+			push_back(val);
+			iterator temp = finish_;
+			temp--;
+			return temp;
+		}
+		else
+			inset_aux(position, val);
+	}
 	三、void insert(iterator position, size_type n, const value_type& val);
 	template<class InputIterator>
 	四、void insert(iterator position, InputIterator first, InputIterator last);
 
-	五、iterator erase(iterator position);
-	六、iterator erase(iterator first, iterator last);
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::iterator deque<T, Alloc>::erase(iterator position)
+	{
+		//next的作用其实不是为了返回迭代器，而是为了copy元素，因为我们只是要移动少量的元素，你就不知道那边的迭代器会失效
+		iterator next = position;
+		next++;
 
-	七、void resize(size_type n, const value_type& val);
+		//前半部分的元素
+		distance_type index = position - start_;
+
+		if(index < size() >> 1)
+		{
+			//表示前面的元素较少，可以移动前面的元素
+			copy_backward(start_, position, next);
+			pop_front();
+		}
+		else
+		{
+			//后半部分的点比较少，可以相对移动后半部分的点
+			copy(next, finish_, position);
+			pop_back();
+		}
+		//这里需要注意一下，因为我们不知道是移动了前面的元素还是后面的元素，所以迭代器会失效，最保险的做法还是从start数的迭代器
+		return start_ + index;
+	}
+
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::iterator deque<T, Alloc>::erase(iterator first, iterator last)
+	{
+		if (first == start_ && last == finish_)
+		{
+			clear();
+			return finish_;
+		}
+		else
+		{
+			//计算移除[first, last)之后前面的元素
+			size_type n = last - first;
+			size_type elements_before = first - start_;
+			if (elements_before < (finish_ - start_ - n) >> 1)
+			{
+				//前面元素比较少
+				copy_backward(start_, first, last);
+				iterator new_start_ = start_ + n;
+				destroy(start_, new_start_);				//析构元素；
+
+				//释放缓冲区
+				for (map_pointer temp = start_.node; temp < new_start_.node; temp++)
+					deallocate_node(*temp);
+
+				start_ = new_start_;
+			}
+			else
+			{
+				//后半部分的元素比较少
+				copy(last, finish_, first);
+				iterator new_finish_ = finish_ - n;
+				destroy(new_finish_, finish_);				//析构元素；
+				
+				for(map_pointer temp = finish_.node; temp > new_finish_.node; temp--)
+					deallocate_node(*temp);
+
+				finish_ = new_finish_;
+				
+			}
+		}
+		return start_ + n;
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::resize(size_type n, const value_type& val)
+	{
+		if (n < size())
+			return;
+		//利用插入迭代器
+		size_type new_n = n - size();
+		insert(finish_, new_n, val);
+	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::swap(const deque& deq)
