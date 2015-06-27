@@ -462,8 +462,9 @@ namespace smart_stl
 	template<class T, class Alloc>
 	typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator position, const value_type& val)
 	{
+		size_type n = begin() - position;
 		insert_aux(position, val);
-		return position;
+		return begin() + n;
 	}
 
 	template<class T, class Alloc>
