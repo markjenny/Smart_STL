@@ -805,6 +805,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void deque<T, Alloc>::reallocate_map(size_type nodes_to_add, bool add_at_front)
 	{
+		//去理解reallocate_map它的作用，它的作用是改变map，但是不改变缓冲区，只是改变map缓冲区中的格局！！
 		size_type old_node_size = finish_.node - start_.node + 1;
 		size_type new_node_size = old_node_size + nodes_to_add;
 		//判断是否有足够的空间，若有，那么不必新建空间
@@ -929,7 +930,14 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void deque<T, Alloc>::insert_aux(iterator position, size_type n, const value_type& val, _true_type)
 	{
-		//插入n个元素所用的方法与插入一个是相同的了，不同的地方是在于移动元素的时候，不过中心思想仍然是“总移动最少的元素”
+		//插入n个元素所用的方法与插入一个是相同的了，不同的地方是在于移动元素的时候，不过中心思想仍然是“总移动最少的元素，
+		//时刻关注缓冲区，如果有空余就进行释放
+		if(position == start_.cur)
+		{
+			iterator new_start_ = reserver_elements_at_front(n);
+			uninitialized_fill_n(new_start_, )
+		}
+
 	}
 	template<class T, class Alloc>
 	template<InputIterator>
