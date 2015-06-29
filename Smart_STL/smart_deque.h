@@ -405,6 +405,11 @@ namespace smart_stl
 			void reserve_map_front(size_type nodes_to_add = 1);
 			void pop_back_aux();
 			void pop_front_aux();
+			iterator insert_aux(iterator position, const value_type& val);
+
+			void insert_aux(iterator position, size_type n, const value_type& val, _true_type);
+			template<InputIterator>
+			void inser_aux(iterator position, iterator first, iterator last, _false_type);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -511,11 +516,23 @@ namespace smart_stl
 			return temp;
 		}
 		else
-			inset_aux(position, val);
+			insert_aux(position, val);
 	}
-	三、void insert(iterator position, size_type n, const value_type& val);
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::insert(iterator position, size_type n, const value_type& val)
+	{
+		typename typedef is_Integer<size_type>::class_type is_Int;
+		insert_aux(position, n, val, is_Int());
+	}
+
+	template<class T, class Alloc>
 	template<class InputIterator>
-	四、void insert(iterator position, InputIterator first, InputIterator last);
+	void deque<T, Alloc>::insert(iterator position, InputIterator first, InputIterator last)
+	{
+		typename typedef is_Integer<InputIterator>::class_type is_Int;
+		insert_aux(position, first, last, is_Int());
+	}
 
 	template<class T, class Alloc>
 	typename deque<T, Alloc>::iterator deque<T, Alloc>::erase(iterator position)
@@ -870,6 +887,55 @@ namespace smart_stl
 		start_.set_node(start_.node + 1);
 		start_.cur = start_.first;
 		node_allocator(*(start_.node - 1));
+	}
+
+	//用于在deque中间插入元素
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::iterator deque<T, Alloc>::insert_aux(iterator position, const value_type& val)
+	{
+		size_type n = position - start_;
+		if(n < size() >> 1)
+		{
+			//push_front可能会到导致position失效
+			push_front(front());
+			//position前的元素比较少，移动这部分元素
+			iterator front1 = start_;
+			front1++;
+			iterator front2 = front1;
+			front2++;
+			position = start_ + n;
+			iterator position1 = position;
+			position1++;
+
+			copy(front2, position1, front1);
+		}
+		else
+		{
+			//position后面的元素更少，移动后半部分元素
+			//push_back可能会导致position失效
+			push_back(back());
+			iterator back1 = finish_;
+			--back1;
+			iterator back2 = back1;
+			--back2;
+			//因为position可能会失效，所以重新定义
+			position = start_ + n;
+			copy_backward(position, back2, back1);
+		}
+		*position = val;
+		return position;
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::insert_aux(iterator position, size_type n, const value_type& val, _true_type)
+	{
+		//插入n个元素所用的方法与插入一个是相同的了，不同的地方是在于移动元素的时候，不过中心思想仍然是“总移动最少的元素”
+	}
+	template<class T, class Alloc>
+	template<InputIterator>
+	void deque<T, Alloc>::inser_aux(iterator position, iterator first, iterator last, _false_type)
+	{
+
 	}
 
 }
