@@ -410,6 +410,13 @@ namespace smart_stl
 			void insert_aux(iterator position, size_type n, const value_type& val, _true_type);
 			template<InputIterator>
 			void inser_aux(iterator position, iterator first, iterator last, _false_type);
+
+			iterator reserve_elements_at_front(size_type n);
+			iterator reserve_elements_at_back(size_type);
+
+			void insert_at_the_middle(iterator position, size_type n, const value_type& val);
+
+			void reserve_new_elements_at_front(size_type n);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -563,6 +570,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	typename deque<T, Alloc>::iterator deque<T, Alloc>::erase(iterator first, iterator last)
 	{
+		size_type n = last - first;
 		if (first == start_ && last == finish_)
 		{
 			clear();
@@ -571,7 +579,6 @@ namespace smart_stl
 		else
 		{
 			//计算移除[first, last)之后前面的元素
-			size_type n = last - first;
 			size_type elements_before = first - start_;
 			if (elements_before < (finish_ - start_ - n) >> 1)
 			{
@@ -934,8 +941,19 @@ namespace smart_stl
 		//时刻关注缓冲区，如果有空余就进行释放
 		if(position == start_.cur)
 		{
-			iterator new_start_ = reserver_elements_at_front(n);
-			uninitialized_fill_n(new_start_, )
+			iterator new_start_ = reserve_elements_at_front(n);
+			uninitialized_fill_n(new_start_, start_, val);
+			start_ = new_start_;
+		}
+		else if(position == finish_.cur)
+		{
+			iterator new_finish_ = reserve_elements_at_back(n);
+			uninitialized_fill(finish_, new_finish_, val);
+			finish_ = new_finish_;
+		}
+		else
+		{
+			insert_at_the_middle(position, n, val);
 		}
 
 	}
@@ -944,6 +962,112 @@ namespace smart_stl
 	void deque<T, Alloc>::inser_aux(iterator position, iterator first, iterator last, _false_type)
 	{
 
+	}
+
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::iterator deque<T, Alloc>::reserve_elements_at_front(size_type n)
+	{
+		size_type vacancies= (size_type)(start_.cur - start_.first);
+		if (vacancies < n)
+			reserve_new_elements_at_front(n - vacancies);
+		return start_ - n;
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::reserve_new_elements_at_front(size_type n)
+	{
+		//为了计算n个元素应该占用多少个node，n + deque_buf_size(sizeof(value_type)) - 1中的-1是为了将0排除掉
+		size_type new_nodes = (n + deque_buf_size(sizeof(value_type)) - 1) / (deque_buf_size(sizeof(value_type)));
+		reserve_map_front(new_nodes);
+
+		distance_type i;
+		for (i = 0; i < n; i++)
+			*(start_.node - i -1) = allocate_node();
+	}
+
+	template<class T, class Alloc>
+	typename deque<T, Alloc>::iterator deque<T, Alloc>::reserve_elements_at_back(size_type n)
+	{
+		size_type vacancies= (size_type)(finish_.cur - finish_.last);
+		if (vacancies < n)
+			reserve_new_elements_at_back(n - vacancies);
+		return finish_ + n;
+	}
+
+	template<class T, class Alloc>
+	void deque<T, Alloc>::reserve_new_elements_at_back(size_type n)
+	{
+		//为了计算n个元素应该占用多少个node，n + deque_buf_size(sizeof(value_type)) - 1中的-1是为了将0排除掉
+		size_type new_nodes = (n + deque_buf_size(sizeof(value_type)) - 1) / (deque_buf_size(sizeof(value_type)));
+		reserve_map_back(new_nodes);
+
+		distance_type i;
+		for (i = 0; i < n; i++)
+			*(start_.node - i -1) = allocate_node();
+	}
+
+	template<class T, class Alloc>
+	void  deque<T, Alloc>::insert_at_the_middle(iterator position, size_type n, const value_type& val)
+	{
+		//insert_at_the_middle给我带来的影响主要是对uninitialized系列的重新认识，例如以uninitialized_copy和copy函数为例，
+		//我是这么总结的，对于uninitialized memory，我们都需要使用uninitialized系列，所以当我们对uninitialized memory处理的时候，
+		//我们应该保持这样的思路：在不得不使用uninitialized_copy的时候，让copy元素的规模尽量少
+		size_type elems_before = position - start_;
+		size_type length = this->size();
+		value_type val_copy = val;
+		if (elems_before <= length >> 1)
+		{
+			iterator new_start_ = reserve_elements_at_front(n);
+			iterator old_start_ = start_;
+			if (elems_before <= n)
+			{
+				//构建新的position迭代器
+				iterator position = new_start_ + elems_before;
+				iterator temp = new_start_;
+				iterator temp2 = start_;
+				for(; temp != position; temp++, temp2++)
+					construct(&(*temp), *temp2);
+				//填充position到start_这段uninitialized memory区域
+				uninitialized_fill(position, start_, val);
+				fill_n(start_, elems_before, val);
+				start_ = new_start_;
+			}
+			else
+			{
+				iterator start_n_ = start_ + n;
+				uninitialized_copy(start_, start_n_, new_start_);
+				copy(start_n_, position, old_start_);
+				fill(position - (distance_type)n, position, val);
+			}
+		}
+		else		//后半部分的元素移动的少，所以加元素就加在后面
+		{
+			size_type  elems_after = distance_type(finish_ - position);
+			iterator new_finish_ = reserve_elements_at_back(n);
+			iterator old_finish_ = finish_;
+			if(n <= elems_after)
+			{
+				iterator finish_n_ = finish_ - n;
+				uninitialized_copy(finish_n_, old_finish_, old_finish_);
+				//将position到finish_n_之间的元素赋值到finish_处，此处应该采用copy_backward函数
+				copy_backward(position, finish_n_, finish_);
+				fill(position, position + n, val);
+				finish_ = new_finish_;
+			}
+			else
+			{
+				//所要增加的元素>elems_after
+				iterator finish_n_ = new_finish_ - n;
+				iterator temp = position;
+				iterator temp1 = finish_n_;
+				for (; temp1 != new_finish_; temp++, temp1++)
+					construct(&(*temp1), temp);
+
+				uninitialized_fill(old_finish_, finish_n_, val);
+				fill(position, old_finish_, val);
+				finish_ = new_finish_;
+			}
+		}
 	}
 
 }
