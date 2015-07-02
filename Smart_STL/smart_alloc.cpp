@@ -26,6 +26,7 @@ namespace smart_stl
 	};
 	//static静态成员变量虽然说不属于类的对象，但是是属于类的，所以这么定义没有问题
 	//allocate的返回值为void类型，这是必须的，因为后续的空间配置器是可能要应用到各种类型的数据中
+	//n为申请的总的bytes
 	void * alloc::allocate(size_t n)
 	{
 		objs * volatile * my_free_list;

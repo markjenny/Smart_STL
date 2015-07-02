@@ -414,8 +414,8 @@ namespace smart_stl
 	void list<T, Alloc>::insert(iterator positon, InputIterator first, InputIterator last)
 	{
 		//因为是inputIterator所以我们没有办法计算他们两个之间的距离
- 		for(; first != last; first++)
- 			insert(positon, *first);
+		for(; first != last; first++)
+			insert(positon, *first);
 	}
 	//
 	//需要注意的一点是，clear时是空链表，要保持有空链表的end
@@ -469,7 +469,7 @@ namespace smart_stl
 	}
 
 	//以下是list特有的函数
-	//总的来说，splice这个函数不是那么友好。。。。。
+	//总的来说，splice这个函数不是那么友好。。。。。，容易用错，比如position在[first,last)中
 	template<class T, class Alloc>
 	void list<T, Alloc>::splice(iterator positon, list& l)
 	{
@@ -601,7 +601,7 @@ namespace smart_stl
 		if (first2 != last2)
 			transfer(last1, first2, last2);
 	}
-	
+
 	template<class T, class Alloc>
 	void list<T, Alloc>::sort()
 	{
@@ -609,7 +609,7 @@ namespace smart_stl
 	}
 	// 	这里的Compare就可以试仿函数，注重算法的思想而不是输入
 	template<class T, class Alloc>
- 	template<class Compare>
+	template<class Compare>
 	void list<T, Alloc>::sort(Compare comp)
 	{
 		//list的sort算法最厉害的地方就是不利用递归来完成归并算法，以减少深度递归带来的程序栈溢出

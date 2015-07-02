@@ -150,7 +150,7 @@ namespace smart_stl
 		/*RandomAccessIterator具有+=n和-=n的功能，即可以向前走n步或者向后走n不，这样我们就可以不用去比较迭代器而直接利用last-first的值来作为
 		循环次数因为_copy_dispatch中含有“原生指针”偏特化的版本，而原生指针也是RandomAccessIterator，所以同时可以调用这个函数，所以为了
 		不增加代码的膨胀我们可以将这个功能划分成一个函数*/
-		_copy_d(first, last, result, distance_type(first));
+		return _copy_d(first, last, result, distance_type(first));
 	}
 
 	/*****
@@ -297,7 +297,7 @@ namespace smart_stl
 		/*RandomAccessIterator具有+=n和-=n的功能，即可以向前走n步或者向后走n不，这样我们就可以不用去比较迭代器而直接利用last-first的值来作为
 		循环次数因为_copy_dispatch中含有“原生指针”偏特化的版本，而原生指针也是RandomAccessIterator，所以同时可以调用这个函数，所以为了
 		不增加代码的膨胀我们可以将这个功能划分成一个函数*/
-		_copy_d_backward(first, last, result, distance_type(first));
+		return _copy_d_backward(first, last, result, distance_type(first));
 	}
 
 	/*****

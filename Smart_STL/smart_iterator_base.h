@@ -112,7 +112,7 @@ namespace smart_stl
 		 //因为编译器不知道_Iterator中的iterator_category是类型还是成员，所以通过typename来告知编译器
 		 typedef typename _Iterator::iterator_category iterator_category;
 		 typedef typename _Iterator::value_type value_type;
-		 typedef typename _Iterator::difference_type distance_type;
+		 typedef typename _Iterator::distance_type distance_type;
 		 typedef typename _Iterator::pointer pointer;
 		 typedef typename _Iterator::reference reference;
 	 };
@@ -165,7 +165,7 @@ namespace smart_stl
 	 inline typename iterator_traits<Iterator>::distance_type*
 		 distance_type(const Iterator&)
 	 {
-		 return static_cast<typename iterator_traits<Iterator>::distance_type*>(0)
+		 return static_cast<typename iterator_traits<Iterator>::distance_type*>(0);
 	 }
 
 
@@ -192,7 +192,7 @@ namespace smart_stl
 		 distance(InputIterator first, InputIterator last)
 	 {
 		 typedef typename iterator_traits<InputIterator>::iterator_category category;
-		 _distance(first, last, category());
+		 return _distance(first, last, category());
 	 }
 
 }
