@@ -77,9 +77,16 @@ int main()
 
 	smart_stl::deque<int> a(10,22);
 	smart_stl::deque<int>::iterator iter = a.begin(); 
+	smart_stl::deque<int>b;
+	b.push_back(1);
+	b.push_back(2);
+	b.push_back(3);
+	b.push_back(4);
+	b.push_back(5);
 	iter++;
 	//for (int i = 0; i < 10; i++)
 	a.insert(iter,10, 50);
+	a.insert(iter, b.begin(), b.end());
 	/*a.insert(iter,50);*/
 	for (smart_stl::deque<int>::iterator iter = a.begin(); iter != a.end(); iter++)
 	{
@@ -90,11 +97,6 @@ int main()
 
 	cout << "the size of a is: " << a.size() << endl;
 
-	smart_stl::deque<int> b = a;
-	if (a == b)
-		cout << "deque a is the same with b" << endl;
-	else
-		cout << "a is different with b" << endl;
 
 	// 	smart_stl::deque<int>::iterator iter = a.begin();
 	// 	smart_stl::deque<int>::iterator iter2 = a.end();
