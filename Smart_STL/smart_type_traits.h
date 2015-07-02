@@ -1,5 +1,5 @@
 /************************************************************************/
-/* ç±»å‹èƒå–å™¨                                                          */
+/* ÀàĞÍİÍÈ¡Æ÷                                                          */
 /************************************************************************/
 #ifndef _SMART_TYPE_TRAITS_H_
 #define  _SMART_TYPE_TRAITS_H_
@@ -7,7 +7,7 @@
 
 namespace smart_stl
 {
-	//å› ä¸ºèƒå–çš„ç»“æœå¾€å¾€æ˜¯åˆ©ç”¨åœ¨é‡è½½å‡½æ•°ä¸­ï¼Œæ‰€ä»¥æˆ‘ä»¬å°±ä¸èƒ½ç”¨boolå˜é‡æ¥è¡¨ç¤ºï¼Œè¦ç”¨ç±»å‹
+	//ÒòÎªİÍÈ¡µÄ½á¹ûÍùÍùÊÇÀûÓÃÔÚÖØÔØº¯ÊıÖĞ£¬ËùÒÔÎÒÃÇ¾Í²»ÄÜÓÃbool±äÁ¿À´±íÊ¾£¬ÒªÓÃÀàĞÍ
 	typedef struct _true_type 
 	{
 	}_true_type;
@@ -16,15 +16,15 @@ namespace smart_stl
 	}_false_type;
 	
 	/****************
-	è¿™ä¸ª_type_traitsä¸­éœ€è¦åŠ ä¸Šä¸€ä¸ªå…ƒç´ â€œthis dummy member must be firstâ€ï¼Œå› ä¸ºæœ‰çš„ç¼–è¯‘å™¨æ˜¯å«æœ‰ç±»å‹å¼ºåŒ–
-	çš„åŠŸèƒ½ï¼Œè¿™ä¸ªæ˜¯ä¸ºäº†å‘Šè¯‰æˆ‘ä»¬è¿™ä¸ª_type_traitsä¸ç¼–è¯‘å™¨ä¸­çš„é‚£ä¸ªæ˜¯ä¸åŒçš„ï¼Œå¿…é¡»è¦é‡‡ç”¨æˆ‘ä»¬çš„è¿™ä¸ª_type_traits
+	Õâ¸ö_type_traitsÖĞĞèÒª¼ÓÉÏÒ»¸öÔªËØ¡°this dummy member must be first¡±£¬ÒòÎªÓĞµÄ±àÒëÆ÷ÊÇº¬ÓĞÀàĞÍÇ¿»¯
+	µÄ¹¦ÄÜ£¬Õâ¸öÊÇÎªÁË¸æËßÎÒÃÇÕâ¸ö_type_traitsÓë±àÒëÆ÷ÖĞµÄÄÇ¸öÊÇ²»Í¬µÄ£¬±ØĞëÒª²ÉÓÃÎÒÃÇµÄÕâ¸ö_type_traits
 	*****************/
 	template<class T>
 	struct _type_traits
 	{
-		/*å°†è¿™äº›è¯¸å¦‚has_trivial_default_constructorè®¾ç½®æˆtrivialæ˜¯å› ä¸ºæˆ‘ä»¬ä¸çŸ¥é“æ˜¯å¦æ˜¯trivialè¿™æ ·æˆ‘ä»¬å°±éœ€è¦è®¾ç½®ä¸€ä¸ª
-		ä¿å®ˆå€¼ï¼Œå½“ä»–å³ä½¿å«æœ‰trivialçš„ä¸€ä¸ªå‡½æ•°ï¼Œæˆ‘ä»¬ä¹ŸæŒ‰ç…§non-trivialæ¥å¤„ç†ï¼Œè¿™æ ·ä¹Ÿä¸ä¼šå‡ºé”™ï¼Œè™½ç„¶åœ¨æ•ˆç‡ä¸Šæ…¢äº†ç‚¹
-		ä½†æ˜¯å½“å¯¹è±¡æ‹¥æœ‰çš„ä»…æ˜¯non-trivialç±»å‹çš„å‡½æ•°ï¼Œé‚£ä¹ˆä»–ä¸€å®šä¸ä¼šå‡ºé”™*/
+		/*½«ÕâĞ©ÖîÈçhas_trivial_default_constructorÉèÖÃ³ÉtrivialÊÇÒòÎªÎÒÃÇ²»ÖªµÀÊÇ·ñÊÇtrivialÕâÑùÎÒÃÇ¾ÍĞèÒªÉèÖÃÒ»¸ö
+		±£ÊØÖµ£¬µ±Ëû¼´Ê¹º¬ÓĞtrivialµÄÒ»¸öº¯Êı£¬ÎÒÃÇÒ²°´ÕÕnon-trivialÀ´´¦Àí£¬ÕâÑùÒ²²»»á³ö´í£¬ËäÈ»ÔÚĞ§ÂÊÉÏÂıÁËµã
+		µ«ÊÇµ±¶ÔÏóÓµÓĞµÄ½öÊÇnon-trivialÀàĞÍµÄº¯Êı£¬ÄÇÃ´ËûÒ»¶¨²»»á³ö´í*/
 		typedef _true_type this_dummy_member_must_be_first;
 		typedef _false_type has_trivial_default_constructor;
 		typedef _false_type has_trivial_copy_constructor;
@@ -44,11 +44,11 @@ namespace smart_stl
 		};
 
 
-		/*é’ˆå¯¹charçš„ç±»å‹è®¾è®¡å‡ºäº†charã€unsigned charã€signed charæ˜¯å› ä¸ºæœ‰çš„ç¼–è¯‘å™¨é»˜è®¤charæ˜¯
-		unsigned charç±»å‹,è€Œæœ‰çš„ç¼–è¯‘å™¨åˆæ˜¯å°†charé»˜è®¤æˆsigned charç±»å‹çš„ï¼Œæ‰€ä»¥éƒ½è¦å†™å‡ºæ¥ï¼Œè€Œsigned char
-		å’Œunsigned charçš„ä¸»è¦åŒºåˆ«å°±æ˜¯å¯¹äºunsigned charæœ€é«˜ä½æ˜¯æ•°æ®ä½ï¼Œè€Œå¯¹signed charæ¥è¯´æœ€é«˜ä½æ˜¯
-		ç¬¦å·ä½ï¼Œé‚£ä¹ˆåœ¨charåƒå…¶ä»–bytesæ•°é«˜çš„æ•°æ®ç±»å‹è¿›è¡Œè½¬æ¢çš„æ—¶å€™ï¼Œunsigned charæ‰©å±•é›¶å³å¯ï¼Œä½†æ˜¯
-		signed charå´è¦æ‰©å±•ç¬¦å·ä½*/
+		/*Õë¶ÔcharµÄÀàĞÍÉè¼Æ³öÁËchar¡¢unsigned char¡¢signed charÊÇÒòÎªÓĞµÄ±àÒëÆ÷Ä¬ÈÏcharÊÇ
+		unsigned charÀàĞÍ,¶øÓĞµÄ±àÒëÆ÷ÓÖÊÇ½«charÄ¬ÈÏ³Ésigned charÀàĞÍµÄ£¬ËùÒÔ¶¼ÒªĞ´³öÀ´£¬¶øsigned char
+		ºÍunsigned charµÄÖ÷ÒªÇø±ğ¾ÍÊÇ¶ÔÓÚunsigned char×î¸ßÎ»ÊÇÊı¾İÎ»£¬¶ø¶Ôsigned charÀ´Ëµ×î¸ßÎ»ÊÇ
+		·ûºÅÎ»£¬ÄÇÃ´ÔÚcharÏñÆäËûbytesÊı¸ßµÄÊı¾İÀàĞÍ½øĞĞ×ª»»µÄÊ±ºò£¬unsigned charÀ©Õ¹Áã¼´¿É£¬µ«ÊÇ
+		signed charÈ´ÒªÀ©Õ¹·ûºÅÎ»*/
 		_SMART_STL_TEMPLAT_NULL 
 		struct _type_traits<signed char>
 		{
@@ -123,7 +123,7 @@ namespace smart_stl
 		};
 
 
-		//æµ®ç‚¹å‹ä½æ•°æ˜¯32bits(32ä½çš„å¤„ç†å™¨)
+		//¸¡µãĞÍÎ»ÊıÊÇ32bits(32Î»µÄ´¦ÀíÆ÷)
 		_SMART_STL_TEMPLAT_NULL 
 		struct _type_traits<float>
 		{
@@ -153,40 +153,39 @@ namespace smart_stl
 				typedef _true_type has_trivial_destructor;
 				typedef _true_type is_POD_type;
 			};
-		
-		template<class T>
-		struct _type_traits<T*>
-		{
-			typedef _false_type has_trivial_default_constructor;
-			typedef _false_type has_trivial_copy_constructor;
-			typedef _false_type has_trivial_assignment_operator;
-			typedef _false_type has_trivial_destructor;
-			typedef _false_type is_POD_type;
-		};
 
+					template<class T>
+			struct _type_traits<T*>
+			{
+				typedef _false_type has_trivial_default_constructor;
+				typedef _false_type has_trivial_copy_constructor;
+				typedef _false_type has_trivial_assignment_operator;
+				typedef _false_type has_trivial_destructor;
+				typedef _false_type is_POD_type;
+			};
 
-			//4.16.2015 æ–°å¢åŠ çš„åŠŸèƒ½ï¼Œç”¨äºå»åˆ¤æ–­ä¸€ä¸ªç±»å‹æ˜¯å¦æ˜¯æ•´æ•°ï¼Œå› ä¸ºè¦åº”ç”¨åˆ°vectorçš„æ„é€ å‡½æ•°ä¸­
+			//4.16.2015 ĞÂÔö¼ÓµÄ¹¦ÄÜ£¬ÓÃÓÚÈ¥ÅĞ¶ÏÒ»¸öÀàĞÍÊÇ·ñÊÇÕûÊı£¬ÒòÎªÒªÓ¦ÓÃµ½vectorµÄ¹¹Ôìº¯ÊıÖĞ
 			template<class T>
 			struct is_Integer
 			{
 				typedef _false_type class_type;
 			};
 
-			//è¯¥å½¢å¼çš„ä½¿ç”¨æ˜¯â€œæ˜¾ç¤ºå…·ä½“åŒ–â€
+			//¸ÃĞÎÊ½µÄÊ¹ÓÃÊÇ¡°ÏÔÊ¾¾ßÌå»¯¡±
 		_SMART_STL_TEMPLAT_NULL
 			struct is_Integer<int>
 			{
 				typedef _true_type class_type;
 			};
 
-			//è¯¥å½¢å¼çš„ä½¿ç”¨æ˜¯â€œæ˜¾ç¤ºå…·ä½“åŒ–â€
+			//¸ÃĞÎÊ½µÄÊ¹ÓÃÊÇ¡°ÏÔÊ¾¾ßÌå»¯¡±
 			_SMART_STL_TEMPLAT_NULL
 			struct is_Integer<unsigned int>
 			{
 				typedef _true_type class_type;
 			};
 
-			//è¯¥å½¢å¼çš„ä½¿ç”¨æ˜¯â€œæ˜¾ç¤ºå…·ä½“åŒ–â€
+			//¸ÃĞÎÊ½µÄÊ¹ÓÃÊÇ¡°ÏÔÊ¾¾ßÌå»¯¡±
 			_SMART_STL_TEMPLAT_NULL
 			struct is_Integer<long unsigned int>
 			{
