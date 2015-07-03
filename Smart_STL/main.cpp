@@ -7,6 +7,7 @@
 #include "smart_deque.h"
 #include <vector>
 #include <list>
+#include <deque>
 using namespace std;
 
 int main()
@@ -75,6 +76,7 @@ int main()
 	// 	}
 	// 	cout << endl;
 
+	//////////////////////////////////////////////////////////////////////////
 	smart_stl::deque<int> a(10,22);
 	smart_stl::deque<int>::iterator iter = a.begin(); 
 	smart_stl::deque<int>b;
@@ -96,6 +98,7 @@ int main()
 	}
 
 	cout << "the size of a is: " << a.size() << endl;
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 	// 	smart_stl::deque<int>::iterator iter = a.begin();
@@ -120,33 +123,33 @@ int main()
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 	 		double start,end,cost;
-	// 	 		start=clock();
-	// 	 		/*Sleep(1);*/
-	// 	 	 	smart_stl::vector<int> smart_a;
-	// 	 	 	for (int i = 0; i < 10000; i++)
-	// 	 	 	{
-	// 	 	 		smart_a.push_back(i);
-	// 	 	 		//cout << a.back() << endl;
-	// 	 	 	}
-	// 	 		end=clock();
-	// 	 		cost= end - start;
-	// 	 		cout << "利用smart_stl库中的push_back一百万个数时所用时间为：" << 1000 * cost/CLOCKS_PER_SEC << "s" << endl;
-	// 	 
-	// 	 	double start1,end1,cost1;
-	// 	 	start1=clock();
-	// 	 	//int aa = start;
-	// 	 	/*Sleep(1);*/
-	// 	 	vector<int> a;
-	// 	 	for (int i = 0; i < 10000; i++)
-	// 	 	{
-	// 	 		a.push_back(i);
-	// 	 		//cout << a.back() << endl;
-	// 	 	}
-	// 	 	end1=clock();
-	// 	 	//int bb = end;
-	// 	 	cost1= end1 - start1;
-	// 	 	cout << "利用sgi_stl库中的push_back一百万个数时所用时间为：" << 1000 * cost1/CLOCKS_PER_SEC << "s" << endl;
+// 	 	 		double start,end,cost;
+// 	 	 		start=clock();
+// 	 	 		/*Sleep(1);*/
+// 	 	 	 	smart_stl::deque<int> smart_a;
+// 	 	 	 	for (int i = 0; i < 10000; i++)
+// 	 	 	 	{
+// 	 	 	 		smart_a.push_back(i);
+// 	 	 	 		//cout << a.back() << endl;
+// 	 	 	 	}
+// 	 	 		end=clock();
+// 	 	 		cost= end - start;
+// 	 	 		cout << "利用smart_stl库中的push_back一百万个数时所用时间为：" << 1000 * cost/CLOCKS_PER_SEC << "s" << endl;
+// 	 	 
+// 	 	 	double start1,end1,cost1;
+// 	 	 	start1=clock();
+// 	 	 	//int aa = start;
+// 	 	 	/*Sleep(1);*/
+// 	 	 	deque<int> a;
+// 	 	 	for (int i = 0; i < 10000; i++)
+// 	 	 	{
+// 	 	 		a.push_back(i);
+// 	 	 		//cout << a.back() << endl;
+// 	 	 	}
+// 	 	 	end1=clock();
+// 	 	 	//int bb = end;
+// 	 	 	cost1= end1 - start1;
+// 	 	 	cout << "利用sgi_stl库中的push_back一百万个数时所用时间为：" << 1000 * cost1/CLOCKS_PER_SEC << "s" << endl;
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
