@@ -124,7 +124,7 @@ namespace smart_stl
 			}
 			return *this;
 		}
-		
+
 		self operator ++ (int)
 		{
 			iterator temp = *this;
@@ -145,7 +145,7 @@ namespace smart_stl
 
 		self operator -- (int)
 		{
-			iterator temp = &this;
+			iterator temp = *this;
 			--*this;
 			return temp;
 		}
@@ -156,7 +156,7 @@ namespace smart_stl
 			//计算从该段缓冲区中first起始偏移的位置
 			distance_type offset = n + (cur - first);
 			//判断这个偏移的位置是否是在本段中；因为起始位置是在first，那么你最多只能偏移0和buffer_size的距离
-			if(offset >= 0 && offset < buffer_size())
+			if(offset >= 0 && offset < (distance_type)buffer_size())
 				cur = first + offset;
 			else
 			{
@@ -183,7 +183,7 @@ namespace smart_stl
 
 		self& operator -= (distance_type n)
 		{
-			*this -= -n;
+			return *this += -n;
 		}
 
 		self operator - (distance_type n)
@@ -303,7 +303,7 @@ namespace smart_stl
 	public:
 		/*****与构造函数、复制构造函数、assignment operator、析构函数（析构缓冲区上的所有元素，并且将map及所用到的缓冲区释放）***/
 		//start_和finish_自带的赋值构造函数可以满足相关的设定
-		deque( ) : start_(), finish_(), map_size(0), map_pointer(0) { fill_initialize(0, T()); }
+		deque( ) : start_(), finish_(), map_size(0), map(NULL) { fill_initialize(0, T()); }
 		explicit deque(size_type n) : start_(), finish_(), map(0), map_size(0) {fill_initialize(n, T());}
 		//一定要用is_Integer来区分下面两个！！！！！！！   
 		//deque(size_type n, const value_type& val):start_(), finish_(), map(0), map_size(0) {fill_initialize(n, val);}
@@ -321,6 +321,14 @@ namespace smart_stl
 		friend bool operator == (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
 		template<class T, class Alloc>
 		friend bool operator != (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
+		template<class T, class Alloc>
+		friend bool operator >= (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
+		template<class T, class Alloc>
+		friend bool operator > (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
+		template<class T, class Alloc>
+		friend bool operator <= (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
+		template<class T, class Alloc>
+		friend bool operator < (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs);
 		/*********************************************************************************************************************************/
 
 		/*********************************************与迭代器相关***********************************************************************/
@@ -359,7 +367,7 @@ namespace smart_stl
 			{
 				return start_[distance_type(n)];
 			}
-			
+
 		}
 		/*********************************************************************************************************************************/
 
@@ -383,40 +391,43 @@ namespace smart_stl
 
 
 		/*****************************private函数*****************************************************************************************/
-		private:
-			enum {INITIAL_MAP_SIZE = 8};
-			//不带参数的构造函数也是要使用这个函数的，只要把他的n设置为0就好了
-			void fill_initialize(size_type n, const value_type& val);
-			void create_map_and_nodes(size_type num_elements);
-			//为每个map中的点分配缓冲区
-			pointer allocate_node();
-			template<class Integer>
-			void deque_aux(Integer n, const value_type& val, _true_type);
-			template<class InputIterator>
-			void deque_aux(InputIterator first, InputIterator last, _false_type);
-			//释放缓冲区
-			void deallocate_node(pointer p);
-			//释放中控区
-			void deallocate_map(map_pointer mp);
-			void push_back_aux(const value_type& val);
-			void reserve_map_back(size_type nodes_to_add = 1);
-			void reallocate_map(size_type nodes_to_add, bool add_at_front);
-			void push_front_aux(const value_type& val);
-			void reserve_map_front(size_type nodes_to_add = 1);
-			void pop_back_aux();
-			void pop_front_aux();
-			iterator insert_aux(iterator position, const value_type& val);
+	private:
+		enum {INITIAL_MAP_SIZE = 8};
+		//不带参数的构造函数也是要使用这个函数的，只要把他的n设置为0就好了
+		void fill_initialize(size_type n, const value_type& val);
+		void create_map_and_nodes(size_type num_elements);
+		//为每个map中的点分配缓冲区
+		pointer allocate_node();
+		template<class Integer>
+		void deque_aux(Integer n, const value_type& val, _true_type);
+		template<class InputIterator>
+		void deque_aux(InputIterator first, InputIterator last, _false_type);
+		//释放缓冲区
+		void deallocate_node(pointer p);
+		//释放中控区
+		void deallocate_map(map_pointer mp);
+		void push_back_aux(const value_type& val);
+		void reserve_map_back(size_type nodes_to_add = 1);
+		void reallocate_map(size_type nodes_to_add, bool add_at_front);
+		void push_front_aux(const value_type& val);
+		void reserve_map_front(size_type nodes_to_add = 1);
+		void pop_back_aux();
+		void pop_front_aux();
+		iterator insert_aux(iterator position, const value_type& val);
 
-			void insert_aux(iterator position, size_type n, const value_type& val, _true_type);
-			template<InputIterator>
-			void inser_aux(iterator position, iterator first, iterator last, _false_type);
+		void insert_aux(iterator position, size_type n, const value_type& val, _true_type);
+		template<class InputIterator>
+		void insert_aux(iterator position, InputIterator first, InputIterator last, _false_type);
 
-			iterator reserve_elements_at_front(size_type n);
-			iterator reserve_elements_at_back(size_type);
+		iterator reserve_elements_at_front(size_type n);
+		iterator reserve_elements_at_back(size_type);
 
-			void insert_at_the_middle(iterator position, size_type n, const value_type& val);
+		void insert_at_the_middle(iterator position, size_type n, const value_type& val);
+		template<class InputIterator>
+		void insert_at_the_middle(iterator position, InputIterator first, InputIterator last);
 
-			void reserve_new_elements_at_front(size_type n);
+		void reserve_new_elements_at_front(size_type n);
+		void reserve_new_elements_at_back(size_type n);
 	};
 
 	/*****************************************************【deque的相关实现】************************************************************/
@@ -498,7 +509,7 @@ namespace smart_stl
 		{
 			destroy(start_.cur, start_.last);
 			destroy(finish_.first, finish_.cur);
-			node_allocator::deallocate(*finish_.node, (distance_type)deque_buf_size(sizeof(value_type));
+			node_allocator::deallocate(*finish_.node, (distance_type)deque_buf_size(sizeof(value_type)));
 		}
 		else
 			//只有一个缓冲区的时候要注意了，是start.cur到ffinish_.cur！！
@@ -523,7 +534,7 @@ namespace smart_stl
 			return temp;
 		}
 		else
-			insert_aux(position, val);
+			return insert_aux(position, val);
 	}
 
 	template<class T, class Alloc>
@@ -599,12 +610,12 @@ namespace smart_stl
 				copy(last, finish_, first);
 				iterator new_finish_ = finish_ - n;
 				destroy(new_finish_, finish_);				//析构元素；
-				
+
 				for(map_pointer temp = finish_.node; temp > new_finish_.node; temp--)
 					deallocate_node(*temp);
 
 				finish_ = new_finish_;
-				
+
 			}
 		}
 		return start_ + n;
@@ -650,7 +661,7 @@ namespace smart_stl
 		//只要有一个配用元素就可以放置
 		if(start_.cur != start_.first)
 		{
-			construct(start_.cur, val);
+			construct(start_.cur - 1, val);
 			--start_.cur;
 		}
 		else
@@ -707,6 +718,31 @@ namespace smart_stl
 	bool operator != (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
 	{
 		return !(lhs == rhs);
+	}
+
+	需要增添的函数
+	template<class T, class Alloc>
+	bool operator >= (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
+	{
+		return !(lhs < rhs);
+	}
+
+	template<class T, class Alloc>
+	bool operator > (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
+	{
+		return rhs < lhs;
+	}
+
+	template<class T, class Alloc>
+	bool operator <= (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
+	{
+		return !(lhs > rhs);
+	}
+
+	template<class T, class Alloc>
+	bool operator < (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
+	{
+		return lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 	}
 
 	template<class T, class Alloc>
@@ -812,6 +848,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void deque<T, Alloc>::reallocate_map(size_type nodes_to_add, bool add_at_front)
 	{
+		//错误：int**会导致变量时常量
 		//去理解reallocate_map它的作用，它的作用是改变map，但是不改变缓冲区，只是改变map缓冲区中的格局！！
 		size_type old_node_size = finish_.node - start_.node + 1;
 		size_type new_node_size = old_node_size + nodes_to_add;
@@ -820,12 +857,16 @@ namespace smart_stl
 		if (map_size > 2 * new_node_size)
 		{
 			new_nstart_ = map + (map_size - new_node_size) / 2 +
-				(true == add_at_front) ? nodes_to_add : 0;
+				(add_at_front ? nodes_to_add : 0);
 
 			if (new_nstart_ < start_.node)
-				copy(start_.node, finish_.node + 1, new_nstart_);
+				for (map_pointer temp = new_nstart_, temp1 = start_.node; temp1 != finish_.node + 1; temp++, temp1++ )
+					*temp = *temp1;
+			//smart_stl::copy(start_.node, finish_.node + 1, new_nstart_);
 			else
-				copy_backward(start_.node, finish_.node + 1, new_nstart_);
+				//smart_stl::copy_backward(start_.node, finish_.node + 1, new_nstart_);
+				for (map_pointer temp = new_nstart_ + old_node_size - 1, temp1 = finish_.node; temp1 != start_.node - 1; temp--, temp1--)
+					*temp = *temp1;
 		}
 		else
 		{
@@ -833,9 +874,11 @@ namespace smart_stl
 			map_pointer new_map = map_allocator::allocate(new_map_size);
 
 			new_nstart_ = new_map + (new_map_size - new_node_size) / 2 + 
-				(true == add_at_front) ? nodes_to_add : 0;
+				(add_at_front ? nodes_to_add : 0);
 			//把原map的内容拷贝过来
-			copy(start_.node, finish_.node + 1, new_nstart_);
+			//copy(start_.node, finish_.node + 1, new_nstart_);
+			for (map_pointer temp = new_nstart_, temp1 = start_.node; temp1 != finish_.node + 1; temp++, temp1++ )
+				*temp = *temp1;
 			//析构原来的map中控区
 			//注意这里直接释放内容就可以了，因为存放的是16进制数，不存在对象，所以不用析构
 			map_allocator::deallocate(map, map_size);
@@ -874,7 +917,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	void deque<T, Alloc>::reserve_map_front(size_type nodes_to_add  = 1 )
 	{
-		if (start_.node - map < nodes_to_add)
+		if (start_.node - map < (distance_type)nodes_to_add)
 			reallocate_map(nodes_to_add, true);
 	}
 
@@ -939,13 +982,13 @@ namespace smart_stl
 	{
 		//插入n个元素所用的方法与插入一个是相同的了，不同的地方是在于移动元素的时候，不过中心思想仍然是“总移动最少的元素，
 		//时刻关注缓冲区，如果有空余就进行释放
-		if(position == start_.cur)
+		if(position == start_)
 		{
 			iterator new_start_ = reserve_elements_at_front(n);
-			uninitialized_fill_n(new_start_, start_, val);
+			uninitialized_fill(new_start_, start_, val);
 			start_ = new_start_;
 		}
-		else if(position == finish_.cur)
+		else if(position == finish_)
 		{
 			iterator new_finish_ = reserve_elements_at_back(n);
 			uninitialized_fill(finish_, new_finish_, val);
@@ -958,10 +1001,28 @@ namespace smart_stl
 
 	}
 	template<class T, class Alloc>
-	template<InputIterator>
-	void deque<T, Alloc>::inser_aux(iterator position, iterator first, iterator last, _false_type)
+	template<class InputIterator>
+	void deque<T, Alloc>::insert_aux(iterator position, InputIterator first, InputIterator last, _false_type)
 	{
-
+		//插入n个元素所用的方法与插入一个是相同的了，不同的地方是在于移动元素的时候，不过中心思想仍然是“总移动最少的元素，
+		//时刻关注缓冲区，如果有空余就进行释放
+		size_type n = last - first;
+		if(position == start_)
+		{
+			iterator new_start_ = reserve_elements_at_front(n);
+			uninitialized_copy(first, last, new_start_);
+			start_ = new_start_;
+		}
+		else if(position == finish_)
+		{
+			iterator new_finish_ = reserve_elements_at_back(n);
+			uninitialized_copy(first, last, new_finish_ - n);
+			finish_ = new_finish_;
+		}
+		else
+		{
+			insert_at_the_middle(position, first, last);
+		}
 	}
 
 	template<class T, class Alloc>
@@ -981,7 +1042,7 @@ namespace smart_stl
 		reserve_map_front(new_nodes);
 
 		distance_type i;
-		for (i = 0; i < n; i++)
+		for (i = 0; i < (distance_type)n; i++)
 			*(start_.node - i -1) = allocate_node();
 	}
 
@@ -1002,7 +1063,7 @@ namespace smart_stl
 		reserve_map_back(new_nodes);
 
 		distance_type i;
-		for (i = 0; i < n; i++)
+		for (i = 0; i < (distance_type)n; i++)
 			*(start_.node - i -1) = allocate_node();
 	}
 
@@ -1013,7 +1074,7 @@ namespace smart_stl
 		//我是这么总结的，对于uninitialized memory，我们都需要使用uninitialized系列，所以当我们对uninitialized memory处理的时候，
 		//我们应该保持这样的思路：在不得不使用uninitialized_copy的时候，让copy元素的规模尽量少
 		size_type elems_before = position - start_;
-		size_type length = this->size();
+		size_type length = size();
 		value_type val_copy = val;
 		if (elems_before <= length >> 1)
 		{
@@ -1060,11 +1121,78 @@ namespace smart_stl
 				iterator finish_n_ = new_finish_ - n;
 				iterator temp = position;
 				iterator temp1 = finish_n_;
-				for (; temp1 != new_finish_; temp++, temp1++)
-					construct(&(*temp1), temp);
+// 				for (; temp1 != new_finish_; temp++, temp1++)
+// 					construct(&(*temp1), *temp);
+				uninitialized_copy(position, finish_, new_finish_ - n);
 
 				uninitialized_fill(old_finish_, finish_n_, val);
 				fill(position, old_finish_, val);
+				finish_ = new_finish_;
+			}
+		}
+	}
+
+	template<class T, class Alloc>
+	template<class InputIterator>
+	void  deque<T, Alloc>::insert_at_the_middle(iterator position, InputIterator first, InputIterator last)
+	{
+		size_type elems_before = position - start_;
+		size_type length = size();
+		size_type n = last - first;
+		if (elems_before < length >> 1)		//如果前半部分的元素少，那么就移动前半部分的元素
+		{
+			iterator new_start_ = reserve_elements_at_front(n);
+			iterator old_start_ = start_;
+			if (elems_before <= n)
+			{
+				//构建新的position迭代器
+				iterator position = new_start_ + elems_before;
+				iterator temp = new_start_;
+				iterator temp2 = start_;
+				for(; temp != position; temp++, temp2++)
+					construct(&(*temp), *temp2);
+				//填充position到start_这段uninitialized memory区域
+				uninitialized_copy(first, last, position);
+				start_ = new_start_;
+			}
+			else
+			{
+				iterator start_n_ = start_ + n;
+				uninitialized_copy(start_, start_n_, new_start_);
+				copy(start_n_, position, old_start_);
+				copy(first, last, position - (distance_type)n);
+			}
+		}
+		else		//后半部分的元素移动的少，所以加元素就加在后面
+		{
+			size_type  elems_after = distance_type(finish_ - position);
+			iterator new_finish_ = reserve_elements_at_back(n);
+			iterator old_finish_ = finish_;
+			if(n <= elems_after)
+			{
+				iterator finish_n_ = finish_ - n;
+				uninitialized_copy(finish_n_, old_finish_, old_finish_);
+				//将position到finish_n_之间的元素赋值到finish_处，此处应该采用copy_backward函数
+				copy_backward(position, finish_n_, finish_);
+				//fill(position, position + n, val);
+				copy(first, last, position);
+				finish_ = new_finish_;
+			}
+			else
+			{
+				//所要增加的元素>elems_after
+				iterator finish_n_ = new_finish_ - n;
+				iterator temp = position;
+				iterator temp1 = finish_n_;
+				//这个地方可以用unintialized_copy来解决
+// 				for (; temp1 != new_finish_; temp++, temp1++)
+// 					construct(&(*temp1), *temp);
+				uninitialized_copy(position, finish_, new_finish_ - n);
+
+// 				uninitialized_fill(old_finish_, finish_n_, val);
+// 				fill(position, old_finish_, val);
+				//将position到new_finish_-n之间直接用uninitialized_copy来搞定
+				uninitialized_copy(first, last, position);
 				finish_ = new_finish_;
 			}
 		}
