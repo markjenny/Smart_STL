@@ -221,6 +221,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\smart_queue.h"
+				>
+			</File>
+			<File
+				RelativePath=".\smart_stack.h"
+				>
+			</File>
+			<File
 				RelativePath=".\smart_type_traits.h"
 				>
 			</File>
