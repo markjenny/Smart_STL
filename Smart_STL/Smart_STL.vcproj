@@ -209,6 +209,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\smart_heap.h"
+				>
+			</File>
+			<File
 				RelativePath=".\smart_iterator_base.h"
 				>
 			</File>
