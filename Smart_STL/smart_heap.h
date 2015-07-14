@@ -46,7 +46,7 @@ namespace smart_stl
 	void _push_heap(RandomAccessIterator first, Distance holeIndex, Distance topIndex, const T& val, Compare comp)
 	{
 		//这个也就是《算法4》中的swim函数的变形，不过这里的swim的效率还是要更高一点，它没有进行交换
-		//仅仅是将父节点值赋给holeIndex，省去了一次的赋值事件（比较精彩！！！）
+		//仅仅是将父节点值赋给holeIndex，省去了一次的赋值（比较精彩！！！）
 		T val_copy = val;
 		Distance parent = (holeIndex - 1)/2;
 		while(holeIndex > topIndex && comp(*(first + parent), val_copy))
@@ -73,6 +73,84 @@ namespace smart_stl
 		//这里采用的技术是类型传递
 		push_heap_aux(first, last, distance_type(first), value_type(first), comp);
 	}
+
+
+
+
+	//stl中的pop_heap操作并没有将堆顶的元素取出来，而是直接放在了底部数据(vector)的末尾，所以要得知元素还是
+	//要使用back()，取出元素就使用pop_back()，但是不能乱用，乱用不能保证pop_heap的健壮
+	
+	//len是表示堆最后一个元素的位置（数组下标），注意len其实就是数组的最后一个元素的下标
+	template<class RandomAccessIterator, class Distance, class T>
+	void _pop_heap(RandomAccessIterator first, Distance len, Distance holeIndex, const T& value)
+	{
+		//这个函数的作用是调整堆，adjust
+		*(first + len) = *(first);
+		//因为后面要用到这个值，所以先保存，后面holeIndex会产生变化
+		Distance topIndex = holeIndex;
+		Distance childIndex = 2*holeIndex + 1;
+		while(childIndex <= len - 1)
+		{
+			if(childIndex < len - 1 && *(first + childIndex) < *(first + len +1))
+				childIndex++;
+			*(first + holeIndex) = *(first + childIndex);
+			holeIndex = childIndex;
+			childIndex = 2 * holeIndex + 1;
+		}
+
+		//跳出循环表明该点hole现在已经没有子节点了，它已经是叶子节点了，现在开始swim
+		_push_heap(first, holeIndex, , value);
+	}
+
+	template<class RandomAccessIterator, class Distance, class T>
+	inline void pop_heap_aux(RandomAccessIterator first, RandomAccessIterator last, Distance*, T*)
+	{
+		_pop_heap(first, Distance(last - first - 1), Distance(0), T(*(last - 1)));
+	}
+
+	//[first,last)这个区间是待排序的所有区间
+	template<class RandomAccessIterator>
+	inline void pop_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		pop_heap_aux(first, last, distance_type(first), value_type(first));
+	}
+
+
+	//=======================默认的pop_heap是max-heap，现添加可以自定义排序规则的============================
+	template<class RandomAccessIterator, class Distance, class T, class Compare>
+	void _pop_heap(RandomAccessIterator first, Distance len, Distance holeIndex, const T& value, Compare comp)
+	{
+		//这个函数的作用是调整堆，adjust
+		*(first + len) = *(first);
+		Distance childIndex = 2*holeIndex + 1;
+		//因为后面要用到这个值，所以先保存，后面holeIndex会产生变化
+		Distance topIndex = holeIndex;
+		while(childIndex <= len - 1)
+		{
+			if(childIndex < len - 1 && comp(*(first + childIndex), *(first + childIndex + 1)))
+				childIndex++;
+			*(first + holeIndex) = *(first + childIndex);
+			holeIndex = childIndex;
+			childIndex = 2 * holeIndex + 1;
+		}
+
+		//跳出循环表明该点hole现在已经没有子节点了，它已经是叶子节点了，现在开始swim
+		_push_heap(first, holeIndex, topIndex, value, comp);
+	}
+
+	template<class RandomAccessIterator, class Distance, class T, class Compare>
+	inline void pop_heap_aux(RandomAccessIterator first, RandomAccessIterator last, Distance*, T*, Compare comp)
+	{
+		_pop_heap(first, Distance(last - first - 1), Distance(0), T(*(last - 1)), comp);
+	}
+
+	//[first,last)这个区间是待排序的所有区间
+	template<class RandomAccessIterator, class Compare>
+	inline void pop_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp)
+	{
+		pop_heap_aux(first, last, distance_type(first), value_type(first), comp);
+	}
+
 }
 
 
