@@ -4,7 +4,7 @@
 a smart stl,no thread-safe
 
 
-#Smart_STL目前进度（2015/6/15）
+#Smart_STL目前进度（2015/7/14）
 
 ##smart_stl组件进度：
 
@@ -25,6 +25,15 @@ a smart stl,no thread-safe
 8.smart_list完成进度：100%；
 
 9.smart_functional完成进度：100%；
+
+10.smart_deque完成进度：100%；
+
+11.smart_stack完成进度：100%;
+
+12.smart_queue完成进度：100%；
+
+11.smart_heap完成进度：50%；
+
 
 ##smart_stl算法进度：
 
@@ -97,4 +106,80 @@ cout << *iter << " ";
 100 90 89 78 67 56 45 34 23 12
 12 23 34 45 56 67 78 89 90 100
 ```
- 
+
+
+###deque相关测试 
+```
+smart_stl::deque<int> a(10,22);
+smart_stl::deque<int>::iterator iter = a.begin(); 
+smart_stl::deque<int>b;
+b.push_back(1);
+b.push_back(2);
+b.push_back(3);
+b.push_back(4);
+b.push_back(5);
+iter++;
+a.insert(iter, 2, 50);
+a.insert(iter, b.begin(), b.end());
+for (smart_stl::deque<int>::iterator iter = a.begin(); iter != a.end(); iter++)
+{
+	int a;
+	a = *iter;
+	cout << *iter << " ";
+}
+cout << endl;
+cout << "the size of a is: " << a.size() << endl;
+```
+
+输出结果：
+```
+22 50 50 1 2 3 4 5 22 22 22 22 22 22 22 22 22
+the size of a is: 17
+```
+
+测试代码(在上段代码的基础上)
+```
+cout << a[4] << endl;
+cout << a.at(15) << endl;
+```
+
+输出结果：
+```
+2
+22
+```
+测试代码(在上段代码的基础上)
+```
+a.erase(temp);
+for (smart_stl::deque<int>::iterator iter = a.begin(); iter != a.end(); iter++)
+{
+	int a;
+	a = *iter;
+	cout << *iter << " ";
+}
+cout << "the size of a is: " << a.size() << endl;
+```
+
+输出结果：
+```
+22 50 50 1 3 4 5 22 22 22 22 22 22 22 22 22
+the size of a is: 16
+```
+
+测试代码:
+```
+a.erase(temp, temp + 5);
+	for (smart_stl::deque<int>::iterator iter = a.begin(); iter != a.end(); iter++)
+	{
+		int a;
+		a = *iter;
+		cout << *iter << " ";
+	}
+	cout << "the size of a is: " << a.size() << endl;
+```
+
+输出结果：
+```
+22 50 50 1 22 22 22 22 22 22 22 22
+the size of a is: 12
+```
