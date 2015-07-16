@@ -42,7 +42,7 @@ namespace smart_stl
 	}
 
 	//=======================默认的push_heap是max-heap，现添加可以自定义排序规则的============================
-	template<class RandomAccessIterator, class Distance, class T, class Compare comp>
+	template<class RandomAccessIterator, class Distance, class T, class Compare>
 	void _push_heap(RandomAccessIterator first, Distance holeIndex, Distance topIndex, const T& val, Compare comp)
 	{
 		//这个也就是《算法4》中的swim函数的变形，不过这里的swim的效率还是要更高一点，它没有进行交换
@@ -149,6 +149,72 @@ namespace smart_stl
 	inline void pop_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp)
 	{
 		pop_heap_aux(first, last, distance_type(first), value_type(first), comp);
+	}
+
+
+	//====================smart_heap的第三个功能：sort_heap：重复调用pop_heap即可===========================
+	template<class RandomAccessIterator>
+	void sort_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		while((last - first) > 1)
+			pop_heap(first, last);
+	}
+
+	//增加比较规则Compare
+	template<class RandomAccessIterator, class Compare>
+	void sort_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp)
+	{
+		while(last - first > 1)
+			pop_heap(first, last, comp);
+	}
+
+	//smart_heap的最后一个功能：将一个底层数据结构(vector)的数据转换成一个堆，对于
+	//smart_heap中的所有数据，都需要先萃取出他的value_type和distance_type
+	template<class RandomAccessIterator, class Distance, class T>
+	void make_heap_aux(RandomAccessIterator first, RandomAccessIterator last, Distance*, T*)
+	{
+		if(last - first < 2)		//只有一个元素，不需要make heap
+			return;
+		//len表示vector中最后一个元素的下标
+		Distance len = last - first - 1;
+		//左后一个也节点对应的父节点即是这个树中的最后一个非叶子节点
+		Distance parrent = (len - 1)/2;
+		while (parrent >= 0)
+		{
+			//我对这个问题不是很清楚，准备看一下《C++ Template》看看是否有相关解释
+			_pop_heap(first, len, parrent, T(*(first + parrent)));
+			parrent--;
+		}
+	}
+
+	template<class RandomAccessIterator>
+	void make_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		make_heap_aux(first, last, distance_type(first), value_type(first));
+	}
+
+	//===============为make_heap增加可以自定义的比较类型版本===================
+	template<class RandomAccessIterator, class Distance, class T, class Compare>
+	void make_heap_aux(RandomAccessIterator first, RandomAccessIterator last, Distance*, T*, Compare comp)
+	{
+		if(last - first < 2)		//只有一个元素，不需要make heap
+			return;
+		//len表示vector中最后一个元素的下标
+		Distance len = last - first - 1;
+		//左后一个也节点对应的父节点即是这个树中的最后一个非叶子节点
+		Distance parrent = (len - 1)/2;
+		while (parrent >= 0)
+		{
+			//我对这个问题不是很清楚，准备看一下《C++ Template》看看是否有相关解释
+			_pop_heap(first, len, parrent, T(*(first + parrent)), comp);
+			parrent--;
+		}
+	}
+
+	template<class RandomAccessIterator, class Compare>
+	void make_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp)
+	{
+		make_heap_aux(first, last, distance_type(first), value_type(first), comp);
 	}
 
 }
