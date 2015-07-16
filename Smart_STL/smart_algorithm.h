@@ -280,9 +280,12 @@ namespace smart_stl
 	template<class BidirectionalInterator1, class BidirectionalInterator2>
 	inline BidirectionalInterator2 _copy_backward(BidirectionalInterator1 first, BidirectionalInterator1 last, BidirectionalInterator2 result, bidirectional_iterator_tag)
 	{
+		last--;
+		result--;
 		//因为InputIterator只能执行向前++的操作，所以我们判断边界只能是通过first！=last来判断，这样造成的问题就是每次都是要使用比较操作，造成速率较慢
-		for(; first != last; --last, --result)
+		for(; first != last; last--, result--)
 			*result = *first;
+		*result = *last;
 		return result;
 	}
 
@@ -308,8 +311,11 @@ namespace smart_stl
 	template<class RandomAccessIterator, class BidirectionalInterator, class Distance>
 	inline BidirectionalInterator _copy_d_backward(RandomAccessIterator first, RandomAccessIterator last, BidirectionalInterator result, Distance*)
 	{
-		for (Distance n = last - first; n > 0; n--, --result, --first)
-			*result = *first;
+		Distance n = last - first;
+		last--;
+		result--;
+		for ( ; n > 0; n--, last--, result--)
+			*result = *last;
 		return result;
 	}
 
@@ -361,6 +367,53 @@ namespace smart_stl
 		for (; first != last; first++)
 			*first = val;
 	}
+
+	/*****
+	功能：字典序比较两个序列，如果第一个序列的字典序小于第二个序列的字典序，那么返回true，否则返false
+	参数：第一个待比较范围的起始位置first1，终止位置last1；第二个待比较范围的起始位置first2，待比较范围last2
+	返回值：比较结果的bool常量
+	******/
+	template<class InputIterator1, class InputIterator2>
+	bool lexicographical_compare(InputIterator1 first1, InputIterator1 last1, 
+														InputIterator2 first2, InputIterator2 last2)
+	{
+		//因为接口就是这个样子，所以可以直接利用里面的first1和last1，总体和传引用性能差不多
+		while (first1 != last1)
+		{
+			//如果在序列1在循环的过程中，序列2遍历完那么就是false，如果不等于的话也是false；如果在循环的过程中序列1的元素小于序列2的
+			//元素，那么就返回true；但是如果出了这个序列了，那么就是说明在遍历序列1的过程中一直是相同的，那么最后的结构就交给序列2了
+			if (first2 == last2 || *first1 > *first2)
+				return false;
+			else if(*first2 > *first1)
+				return true;
+			first1++, first2++;
+		}
+		return !(first2 == last2);
+	}
+
+	/*****
+	功能：自定义版本字典序列比较
+	参数：第一个待比较范围的起始位置first1，终止位置last1；第二个待比较范围的起始位置first2，待比较范围last2
+	返回值：比较结果的bool常量
+	******/
+	template<class InputIterator1, class InputIterator2, class Compare>
+	bool lexicographical_compare(InputIterator1 first1, InputIterator1 last1, 
+		InputIterator2 first2, InputIterator2 last2, Compare  comp)
+	{
+		//因为接口就是这个样子，所以可以直接利用里面的first1和last1，总体和传引用性能差不多
+		while (first1 != last1)
+		{
+			//如果在序列1在循环的过程中，序列2遍历完那么就是false，如果不等于的话也是false；如果在循环的过程中序列1的元素小于序列2的
+			//元素，那么就返回true；但是如果出了这个序列了，那么就是说明在遍历序列1的过程中一直是相同的，那么最后的结构就交给序列2了
+			if (first2 == last2 || comp(*first2, first1))
+				return false;
+			else if(comp(*first1, first2))
+				return true;
+			first1++, first2++;
+		}
+		return !(first2 == last2);
+	}
+
 
 
 
