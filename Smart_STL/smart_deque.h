@@ -362,10 +362,10 @@ namespace smart_stl
 		reference at(size_type pos)
 		{
 			if (pos >= size())
-				std::_Throw std:out_of_range();
+				throw std::exception("out of range\n");
 			else
 			{
-				return start_[distance_type(n)];
+				return start_[distance_type(pos)];
 			}
 
 		}
@@ -562,7 +562,7 @@ namespace smart_stl
 		//前半部分的元素
 		distance_type index = position - start_;
 
-		if(index < size() >> 1)
+		if(index < distance_type(size() >> 1))
 		{
 			//表示前面的元素较少，可以移动前面的元素
 			copy_backward(start_, position, next);
@@ -720,7 +720,6 @@ namespace smart_stl
 		return !(lhs == rhs);
 	}
 
-	需要增添的函数
 	template<class T, class Alloc>
 	bool operator >= (const deque<T, Alloc>& lhs, const deque<T, Alloc>& rhs)
 	{
@@ -935,9 +934,10 @@ namespace smart_stl
 	void deque<T, Alloc>::pop_front_aux()
 	{
 		destroy(start_.cur);
+		deallocate_node(start_.first);
+		
 		start_.set_node(start_.node + 1);
 		start_.cur = start_.first;
-		node_allocator(*(start_.node - 1));
 	}
 
 	//用于在deque中间插入元素
