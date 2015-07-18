@@ -4,7 +4,7 @@
 a smart stl,no thread-safe
 
 
-#Smart_STL目前进度（2015/7/14）
+#Smart_STL目前进度（2015/7/18）
 
 ##smart_stl组件进度：
 
@@ -32,7 +32,7 @@ a smart stl,no thread-safe
 
 12.smart_queue完成进度：100%；
 
-11.smart_heap完成进度：50%；
+11.smart_heap完成进度：100%；
 
 
 ##smart_stl算法进度：
@@ -183,3 +183,17 @@ a.erase(temp, temp + 5);
 22 50 50 1 22 22 22 22 22 22 22 22
 the size of a is: 12
 ```
+
+###heap相关测试：
+```
+int ia[9] = {0, 1, 2, 3, 4, 8, 9, 3, 5};
+vector<int> ivec(ia, ia+9);
+
+make_heap(ivec.begin(), ivec.end());
+for(int i = 0; i < ivec.size(); ++i)
+	cout << ivec[i] << endl;
+cout << endl;
+
+```
+
+![heap相关测试结果](http://7xjxcs.com1.z0.glb.clouddn.com/heap%E7%9B%B8%E5%85%B3%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C.png "heap相关测试结果")
