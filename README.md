@@ -34,6 +34,8 @@ a smart stl,no thread-safe
 
 11.smart_heap完成进度：100%；
 
+12.smart_slist完成进度：30%；
+
 
 ##smart_stl算法进度：
 
@@ -46,6 +48,8 @@ a smart stl,no thread-safe
 4.swap完成进度：100%；
 
 5.fill完成进度：100%；
+
+6.lexicalgraphical_compare完成进度：100%；
 
 
 
@@ -197,3 +201,18 @@ cout << endl;
 ```
 
 ![heap相关测试结果](http://7xjxcs.com1.z0.glb.clouddn.com/heap%E7%9B%B8%E5%85%B3%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C.png "heap相关测试结果")
+
+
+###slist相关测试：
+```
+smart_stl::slist<int> a;
+a.push_front(5);
+a.push_front(6);
+a.push_front(7);
+a.push_front(8);
+for (smart_stl::slist<int>::iterator iter = a.begin(); iter != a.end(); iter++)
+	cout << *iter << endl;
+```
+
+###输出结果：
+![slist相关测试结果](http://7xjxcs.com1.z0.glb.clouddn.com/slist测试结果.png "slist相关测试结果")
