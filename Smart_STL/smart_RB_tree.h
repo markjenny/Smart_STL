@@ -110,6 +110,80 @@ namespace smart_stl
 			node_base = node_base_parent;
 		}
 	}
+
+	template<class Value, class Ref, class Ptr>
+	struct rb_tree_iterator;
+	
+	template<class Value, class Ref, class Ptr>
+	bool operator == (const rb_tree_iterator<Value, Ref, Ptr>& lhs, const rb_tree_iterator<Value, Ref, Ptr>& rhs);
+
+	template<class Value, class Ref, class Ptr>
+	bool operator != (const rb_tree_iterator<Value, Ref, Ptr>& lhs, const rb_tree_iterator<Value, Ref, Ptr>& rhs);
+
+	//根据基层迭代器构建完成版迭代器
+	template<class Value, class Ref, class Ptr>
+	struct rb_tree_iterator : public rb_tree_iterator_base
+	{
+		typedef Value value_type;
+		typedef Ref reference;
+		typedef PTR pointer;
+		//为什么要构建下面这些东西我还是没太搞懂
+		typedef rb_tree_iterator<Value, Value&, Value*> iterator;
+		typedef rb_tree_iterator<Value, const Value&, const Value*> const_iterator;
+		typedef rb_tree_iterator<Value, Ref, Ptr> self;
+		/////////////////////////////////////////////////////
+		typedef rb_tree_iterator<Value>* link_type;
+
+		//迭代器构建的套路一般是先typedef各种类型，然后构造函数，各种重载操作符：++，--，*，->， == ，！=
+		rb_tree_iterator(){}
+		//下面这两中用法和slist简直是太像了，但是为什么我还不太清楚，书看的还是少
+		rb_tree_iterator(link_type x) {node_base = x;}
+		rb_tree_iterator(const iterator&) {node_base = iterator.node_base;}
+
+		reference operator* (){ return link_type(node_base)->node_value;}
+		pointer operator->() {return &(operator*());}
+
+		self& operator++()
+		{
+			increment();		//用于迭代器的前进
+			return *this;
+		}
+		self operator++(int)
+		{
+			self temp = *this;
+			increment();
+			return temp;
+		}
+
+		self& operator-- ()
+		{
+			decrement();	//用于迭代器的后退
+			return *this;
+		}
+
+		self operator++ (int)
+		{
+			self temp = *this;
+			decrement();	//用于迭代器的后退
+			return self;
+		}
+
+		friend bool operator == (const self& lhs, const self& rhs);
+		friend bool operator != (const self& lhs, const self& rhs);
+	};
+
+	template<class Value, class Ref, class Ptr>
+	bool operator == (const rb_tree_iterator<Value, Ref, Ptr>& lhs, const rb_tree_iterator<Value, Ref, Ptr>& rhs)
+	{
+		return lhs.base_ptr == rhs.base_ptr;
+	}
+
+	template<class Value, class Ref, class Ptr>
+	bool operator != (const rb_tree_iterator<Value, Ref, Ptr>& lhs, const rb_tree_iterator<Value, Ref, Ptr>& rhs)
+	{
+		return lhs.base_ptr != rhs.base_ptr;
+	}
+
 }
 
 #endif
