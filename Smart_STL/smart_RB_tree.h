@@ -334,7 +334,8 @@ namespace smart_stl
 		public:
 			typedef rb_tree_iterator<value_type, reference, pointer> iterator;
 		private:
-			iterator _insert(base_ptr position, base_ptr x, const value_type& x);
+			//功能：在son位置上插入x值的节点，son的父节点为parent
+			iterator _insert(base_ptr son, base_ptr parent, const value_type& x);
 			//没搞懂copy得意义
 			link_type _copy(link_type x, link_type p);
 			void _erase(link_type x);		//因为要考虑到删除节点，那么久会调用这个点的node_value的析构函数，这样使用liink_type更加必要
@@ -386,7 +387,53 @@ namespace smart_stl
 			//6.与改变容器相关；
 			pair<iterator, bool> insert_unique(const value_type& x);		//保持
 			iterator insert_equal(const value_type& x);
+			void clear();
 	};
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	typename rb_tree<Key, Value, KeyofValue, Compare, Alloc>::iterator rb_tree<Key,Value, KeyofValue, Compare, Alloc>::insert_equal(const value_type&x)
+	{
+		link_type parent = header;
+		link_type son = root();
+
+		while (son != 0)
+		{
+			//BST形式的搜索，向下
+			parent = son;
+			son = key_compare(KeyofValue()(x), key(son)) ? left(son) : right(son);
+		}
+		return _insert(son, parent, x);
+	}
+
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	pair<typename rb_tree<Key, Value, KeyofValue, Compare, Alloc>::iterator, bool> 
+		rb_tree<Key, Value, KeyofValue, Compare, Alloc>::insert_unique(const value_type& x)
+	{
+		link_type parent = header;
+		link_type son = root();
+		bool comp = true;
+		while (son != 0)
+		{
+			parent = son;
+			comp = key_compare(KeyofValue()(x), key(son)) ? left(son) : right(son);
+			son = comp ? left(son) : right(son); 
+		}
+
+		//此时parent为叶子节点，son为0的位置
+		iterator j = iterator(parent);		//因为要用到它进行++
+		if(comp)
+		{
+			if (j == begin())
+				return pair<iterator, bool>(_insert(son, parent, x), bool);
+			else
+				j--;
+		}
+
+		if(key_compare(key(j.node)), KeyofValue()(x));
+			return pair<iterator, bool>(_insert(son, parent, x), true);
+
+		return pair<iterator, bool>(j, false);
+	}
+
 
 
 }
