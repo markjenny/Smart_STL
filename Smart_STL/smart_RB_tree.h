@@ -388,6 +388,8 @@ namespace smart_stl
 			pair<iterator, bool> insert_unique(const value_type& x);		//保持
 			iterator insert_equal(const value_type& x);
 			void clear();
+			//指针的使用满足最低标准即可，即在这个平衡函数中，节点颜色仅仅在rb_tree_node_base中，所以使用base_ptr即可
+			void rb_tree_rebalance(link_type* new_node, link_type* root_node);
 	};
 	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
 	typename rb_tree<Key, Value, KeyofValue, Compare, Alloc>::iterator rb_tree<Key,Value, KeyofValue, Compare, Alloc>::insert_equal(const value_type&x)
@@ -432,6 +434,49 @@ namespace smart_stl
 			return pair<iterator, bool>(_insert(son, parent, x), true);
 
 		return pair<iterator, bool>(j, false);
+	}
+	//普通的插入操作，因为之前的insert_unique等已经
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	typename rb_tree<Key, Value, KeyofValue, Compare, Alloc>::iterator 
+		rb_tree<Key, Value, KeyofValue, Compare, Alloc>::_insert(base_ptr son, base_ptr parent, const value_type& x)
+	{
+		//感觉x的作用没有都可以，反倒对我现在写这个函数有点影响
+		//主要是为了区分向左边放还是向右边放
+		link_type new_node = 0;
+		//其中的X!=0这个条件我还是没有想的太清楚，先放到这里
+		if(header == parent || son != 0 || key_compare(KeyofValue()(x), key(parent)))
+		{
+			new_node = create_node(x);
+			left(parent) = new_node;
+			if (header == parent)
+			{
+				root() = new_node;
+				rightmost() = new_node;
+				//关于header其中需要改变的一部分整合到下面的if判断条件中，显得整洁
+			}
+			if (parent == leftmost())
+				leftmost() = new_node;
+		}
+		else
+		{
+			//插入到右子节点中
+			right(parent) = new_node;
+			if (parent == rightmost())
+				rightmost() = new_node;
+		}
+		parent(new_node) = parent;
+		left(new_node) = 0;
+		right(new_node) = 0;
+
+		//红黑树中最帅的一点：平衡数成为2-3数，即节点颜色平衡
+		rb_tree_rebalance(new_node, header->parent);
+		amountOfNode++;
+		return iterator(new_node);
+	}
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	void rb_tree<Key, Value, KeyofValue, Compare, Alloc>::rb_tree_rebalance(link_type* new_node, link_type* root_node)
+	{
+
 	}
 
 
