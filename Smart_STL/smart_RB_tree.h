@@ -5,12 +5,13 @@
 #include "smart_iterator_base.h"
 #include "smart_alloc.h"
 //本节为构造底层数据红黑树，以学习为主，因为不太清除红黑树的删除过程（《算法》中关于节点删除的思想是理解的，但是具体还不太清楚，以此练手）
+//需要说明的是，红黑树的【排列】是以key为主的，插入元素是以元素的value为准的
 namespace smart_stl
 {
 	//用于定义节点颜色
 	typedef bool rb_tree_color_type;
 	const rb_tree_color_type rb_tree_red = false;		//bool类型为false的表示红色节点
-	const rb_tree_color_type br_tree_black = true;		//黑色节点又true表示
+	const rb_tree_color_type rb_tree_black = true;		//黑色节点又true表示
 
 	//effectivec++中的：将于class type无关的代码抽离模板，并将base类可以做得事情全部放到base类中
 	struct rb_tree_node_base
@@ -134,7 +135,7 @@ namespace smart_stl
 		typedef rb_tree_iterator<Value, const Value&, const Value*> const_iterator;
 		typedef rb_tree_iterator<Value, Ref, Ptr> self;
 		/////////////////////////////////////////////////////
-		typedef rb_tree_iterator<Value>* link_type;
+		typedef rb_tree_node<Value>* link_type;
 
 		//迭代器构建的套路一般是先typedef各种类型，然后构造函数，各种重载操作符：++，--，*，->， == ，！=
 		rb_tree_iterator(){}
@@ -208,6 +209,9 @@ namespace smart_stl
 		typedef const Value& const_reference;
 		typedef size_t size_type;
 		typedef ptrdiff_t distance_type;
+
+		//定义iterator
+		typedef rb_tree_iterator<value_type, reference, pointer> iterator;
 
 	private:
 		//构造节点等等，这点带有链表的数据结构都是一个德行
@@ -360,36 +364,25 @@ namespace smart_stl
 			rb_tree& operator= (const rb_tree& x);
 			//2.与逻辑比较有关；
 			//3.与容器的size有关；
-			bool empty() const 
-			{
-				return amountOfNode == 0;
-			}
-			size_type size() 
-			{
-				return amountOfNode;
-			}
-			size_type max_size()
-			{
-				return size_type(-1);
-			}
+			bool empty() const {return amountOfNode == 0;}
+			size_type size() {return amountOfNode;}
+			size_type max_size(){return size_type(-1);}
 			//下面这是什么鬼？
 			Compare key_comp() const {return key_compare;}
 			//4.与容器的迭代器有关；
-			iterator begin()
-			{
-				return leftmost();
-			}
-			iterator end()
-			{
-				return header;
-			}
+			iterator begin(){return leftmost();}
+			iterator end() {return header;}
+
+			iterator find(const Key& k);
 			//5.与容器的元素有关；但是对于树应该是没有的
 			//6.与改变容器相关；
 			pair<iterator, bool> insert_unique(const value_type& x);		//保持
 			iterator insert_equal(const value_type& x);
 			void clear();
 			//指针的使用满足最低标准即可，即在这个平衡函数中，节点颜色仅仅在rb_tree_node_base中，所以使用base_ptr即可
-			void rb_tree_rebalance(link_type* new_node, link_type* root_node);
+			void rb_tree_rebalance(rb_tree_node_base* new_node, rb_tree_node_base* root_node);
+			rb_tree_node_base* rb_tree_rotate_left(rb_tree_node_base* new_node);
+			rb_tree_node_base* rb_tree_rotate_right(rb_tree_node_base* new_node);
 	};
 	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
 	typename rb_tree<Key, Value, KeyofValue, Compare, Alloc>::iterator rb_tree<Key,Value, KeyofValue, Compare, Alloc>::insert_equal(const value_type&x)
@@ -473,12 +466,86 @@ namespace smart_stl
 		amountOfNode++;
 		return iterator(new_node);
 	}
+	//调整树的节点颜色，第一个参数为新节点插入的位置
 	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
-	void rb_tree<Key, Value, KeyofValue, Compare, Alloc>::rb_tree_rebalance(link_type* new_node, link_type* root_node)
+	void rb_tree<Key, Value, KeyofValue, Compare, Alloc>::rb_tree_rebalance(rb_tree_node_base* new_node, rb_tree_node_base* root_node)
 	{
-
+		//感觉还没有太读懂这个颜色转换，所以我决定使用《算法4》中的算法
+		//新插入的节点一定是红色的点
+		new_node->color = rb_tree_red;
+		//红黑树的调整是局部稳定，所以只调整与x有关的就可以了；
+		//同时对于他的父节点，判断是否是红色节点，如果为红色，说明对于2-3树中，他是一个3节点
+		//不在while中即表示他的父节点是一个2-3树中的2节点，直接进行插入即可
+		while (new_node != root() new_node->parent->color == rb_tree_red)
+		{
+			if (new_node->parent == new_node->parent->parent->left)		//父节点是正常的红节点
+			{
+				rb_tree_node_base* uncle = new_node->parent->right;
+				if(uncle != NULL && uncle->color == rb_tree_red)			//flip the color()
+				{
+					new_node->parent->color = rb_tree_black;
+					uncle->color = rb_tree_black;
+					new_node->parent->parent->color = rb_tree_red;
+					new_node = new_node->parent->parent;
+				}
+				else																						//无uncle节点或者uncle节点为黑色
+				{
+					new_node = new_node->parent;
+					rb_tree_rotate_left(new_node, header->parent);
+				}
+			}
+		}
 	}
 
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	rb_tree_node_base* rb_tree<Key, Value, KeyofValue, Compare, Alloc>::rb_tree_rotate_left(rb_tree_node_base* new_node)
+	{
+		rb_tree_node_base* temp = new_node->right;
+		new_node->right = temp->left;
+		temp->left = new_node;
+		temp->color = new_node->color;
+		new_node->color = rb_tree_red;
+
+		return temp;
+	}
+
+	//右旋转主要是应用在调整节点颜色上：
+	//1.如果节点的右儿子的颜色为红，那么就进行右旋转；
+	//2.如果节点的左儿子，即左子节点的左子节点也为红，那么对该点进行右旋(右旋的作用粗现了！)
+	//3.如果节点的左右子节点都为红色，flip the color
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	rb_tree_node_base* rb_tree<Key, Value, KeyofValue, Compare, Alloc>::rb_tree_rotate_right(rb_tree_node_base* new_node)
+	{
+		rb_tree_node_base* temp = new_node->left;
+		new_node->left = temp->right;
+		temp->right = new_node;
+		temp->color = new_node->color;
+		new_node->color = rb_tree_red;
+
+		return temp;
+	}
+
+	template<class Key, class Value, class KeyofValue, class Compare, class Alloc>
+	typename rb_tree<Key, Value, KeyofValue, Compare, Alloc>::iterator rb_tree<Key, Value, KeyofValue, Compare, Alloc>::find(const Key& k)
+	{
+		//在find函数中虽然没有出现等于号，但是通过使用key_compare这个仿函数确实可以构建出>=, <= ,并且通过变换两个参数的位置，足以
+		//满足实现==的要求
+		link_type y = header;		//stl中的高深之处，将大于等于k的最小的键设置为y
+		link_type current_node = root();
+
+		//没有括号有时候看起来是如此的清爽
+		while (current_node != NULL)
+			if (!key_compare(key(current_node), k))			//当前点的key值大于等于k
+				y = current_node, current_node = left(current_node);
+			else
+				current_node = right(current_node);
+
+		//退出循环后的y仍然是大于等于k的最小一个
+		iterator j = iterator(current_node);
+		//因为之前判断了j的key值是大于等于k的key值的，现在来继续比较一下，如果k小于j的key值，那么就没有这个等号了，所以一定是没有找到的
+		//思路太好了！
+		return (end() == j || key_compare(k, key(j.node_base))) ? end() : j;
+	}
 
 
 }
