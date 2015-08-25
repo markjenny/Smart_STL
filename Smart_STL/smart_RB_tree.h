@@ -212,6 +212,7 @@ namespace smart_stl
 
 		//定义iterator
 		typedef rb_tree_iterator<value_type, reference, pointer> iterator;
+		typedef rb_tree_iterator<value_type, const_reference, const_pointer> const_iterator;
 
 	private:
 		//构造节点等等，这点带有链表的数据结构都是一个德行
@@ -367,7 +368,7 @@ namespace smart_stl
 			bool empty() const {return amountOfNode == 0;}
 			size_type size() {return amountOfNode;}
 			size_type max_size(){return size_type(-1);}
-			//下面这是什么鬼？
+			//下面这是什么鬼？(展示key的比较规则)
 			Compare key_comp() const {return key_compare;}
 			//4.与容器的迭代器有关；
 			iterator begin(){return leftmost();}
