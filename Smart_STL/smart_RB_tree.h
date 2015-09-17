@@ -33,6 +33,7 @@ namespace smart_stl
 			return x;
 		}
 
+		//设置成static就是为了使得maximum和minimum为rb_tree_node_base所用
 		static base_ptr maximum(base_ptr x)
 		{
 			while (x->right != NULL)
@@ -84,7 +85,8 @@ namespace smart_stl
 				node_base_parent = node_base->parent;
 			}
 
-			//其实这个应该是对应说，如果node_base是当前树中的最大的一个点，那么他应该是++到header的地方，这里《源码剖析》里说的特殊情况应该是不对的
+			//【其实这个应该是对应说，如果node_base是当前树中的最大的一个点，那么他应该是++到header的地方，这里《源码剖析》里说的特殊情况应该是不对的】
+			//上面是我曾经的错误理解，《源码剖析》中侯捷老师说的是正确的
 			if (node_base->right != node_base_parent)
 				node_base = node_base_parent;
 		}
@@ -139,7 +141,8 @@ namespace smart_stl
 
 		//迭代器构建的套路一般是先typedef各种类型，然后构造函数，各种重载操作符：++，--，*，->， == ，！=
 		rb_tree_iterator(){}
-		//下面这两中用法和slist简直是太像了，但是为什么我还不太清楚，书看的还是少
+		//下面这两中用法和slist简直是太像了，但是为什么我还不太清楚，书看的还是少【rb_tree_iterator是利用rb_tree_node构建的，
+		//自然作为构造函数的函数不足为奇】
 		rb_tree_iterator(link_type x) {node_base = x;}
 		rb_tree_iterator(const iterator&) {node_base = iterator.node_base;}
 
@@ -171,6 +174,7 @@ namespace smart_stl
 			return self;
 		}
 
+		//使用的是绑定型的重载操作符函数
 		friend bool operator == (const self& lhs, const self& rhs);
 		friend bool operator != (const self& lhs, const self& rhs);
 	};
@@ -198,7 +202,11 @@ namespace smart_stl
 		typedef rb_tree_node<Value> rbtree_node;
 		typedef simple_alloc<rbtree_node, Alloc> rb_tree_node_allocator;
 		typedef rb_tree_color_type color_type;
-		typedef rbtree_node* link_type;
+		//为什么会将rb_tree_node<Value>*设定为 link_type，而不是将rb_tree_node_base设定为link_type，个人觉得iterator和iterator_base，
+		//rb_tree_node和rb_tree_node_base之间是一一对应的：rb_tree_node继承自rb_tree_node_base，iterator继承自iterator_base
+		//然后iterator_base利用rb_tree_node_base进程构造，iterator利用rb_tree_node进行构造
+
+		typedef rb_tree_node<Value>* link_type;
 		typedef Key key_type;
 
 		//接着定义每个数据都需要的type：value_type，pointer等
