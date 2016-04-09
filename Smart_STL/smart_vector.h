@@ -142,8 +142,14 @@ namespace smart_stl
 		/**************************************************************************************************************************/
 
 		/*****************************************************与迭代器相关********************************************************/
-		iterator begin(){return start_;}
-		//const_iterator begin()const {return start_;}
+		iterator begin() 
+		{
+			return start_;
+		}
+		const_iterator begin() const 
+		{
+			return start_;
+		}
 		const_iterator cbegin() const {return start_;}
 		iterator end() {return finish_;}
 		const_iterator end() const {return finish_;}
@@ -179,9 +185,9 @@ namespace smart_stl
 		reference operator[](distance_type i)  {return *(begin() + i);}
 		//在访问元素付给某个变量的
 		const_reference operator[](distance_type i) const {return *(cbegin() + i);}
-		reference front() {return (*begin());}
+		//reference front() {return *begin();}
 		reference back() {return *(end() - 1);}
-		const_reference front() const {return *(begin()):}
+		const_reference front() const {return *begin();}
 		const_reference back() const {return *(end() - 1);}
 
 		/*****
@@ -318,7 +324,11 @@ namespace smart_stl
 	{
 		//安全检查
 		if (*this != v)
+		{
+			destroy(start_, finish_);
+			deallocate();
 			allocate_and_copy(v.start_, v.finish_);
+		}
 		return *this;
 	}
 
@@ -365,7 +375,7 @@ namespace smart_stl
 	template<class T, class Alloc>
 	bool operator==(const vector<T, Alloc>& v1, const vector<T, Alloc>& v2)
 	{
-		return v1.operator =(v2);
+		return v1.operator ==(v2);
 	}
 
 
@@ -593,7 +603,7 @@ namespace smart_stl
 			const size_type old_size = size();
 			//这个地方也改一下，STL源码剖析中说到当old_size为0的时候，将new_size设为1，但是这样使得
 			//当old_size小的非常泥泞，每次都要创建新空间，转移元素，释放久空间
-			const size_type new_size = old_size == 0 ? 8 : 2 * old_size;
+			const size_type new_size = old_size == 0 ? 8 : 1.5 * old_size;
 
 
 			iterator new_start_ = data_allocator::allocate(new_size);
